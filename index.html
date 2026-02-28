@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecyConnect | Premium Circular Economy</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Maps & Charts -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        dark: { 900: '#000000', 800: '#050505', 700: '#0a0a0a', 600: '#111111', 500: '#1a1a1a' },
+                        brand: { 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root { 
+            --brand: #22c55e; 
+            --accent: #3b82f6; 
+            --glow: rgba(34, 197, 94, 0.5);
+            --sidebar-width: 72px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden; 
+        }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+        /* RTL Support */
+        html[dir="rtl"] body { font-family: 'Segoe UI', sans-serif; }
+        html[dir="rtl"] .font-display { font-family: 'Segoe UI', sans-serif; }
+        html[dir="rtl"] .flex-row { flex-direction: row-reverse; }
+        html[dir="rtl"] .left-0 { left: auto; right: 0; }
+        html[dir="rtl"] .right-0 { right: auto; left: 0; }
+        html[dir="rtl"] .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+        html[dir="rtl"] .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+        html[dir="rtl"] .md\:ml-8 { margin-left: 0; margin-right: 2rem; }
+        html[dir="rtl"] .text-left { text-align: right; }
+        html[dir="rtl"] .text-right { text-align: left; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Orbit Animation */
+        @keyframes orbit { 0% { transform: rotate(var(--start-angle, 0deg)) translateX(var(--radius, 200px)) rotate(calc(-1 * var(--start-angle, 0deg))); } 100% { transform: rotate(calc(var(--start-angle, 0deg) + 360deg)) translateX(var(--radius, 200px)) rotate(calc(-1 * (var(--start-angle, 0deg) + 360deg))); } }
+        
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px var(--glow); } 50% { box-shadow: 0 0 40px var(--glow); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        
+        /* Advanced Background Animations */
+        @keyframes move-grid { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+        @keyframes float-particle { 0%, 100% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-20px) translateX(10px); } 50% { transform: translateY(-10px) translateX(-10px); } 75% { transform: translateY(-30px) translateX(5px); } }
+        @keyframes glow-pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.1); } }
+        @keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.8; } }
+        @keyframes scan-line { 0% { top: -10%; } 100% { top: 110%; } }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+        .delay-4 { transition-delay: 0.4s; }
+
+        /* === DYNAMIC BACKGROUND === */
+        .bg-dynamic {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden;
+            background: radial-gradient(circle at 50% 0%, #0a1612 0%, #000 70%);
+        }
+        
+        /* Advanced Grid Mesh */
+        .grid-mesh {
+            position: absolute; 
+            bottom: -50%;
+            left: -50%;
+            width: 200%; 
+            height: 200%;
+            background-image: linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: move-grid 4s linear infinite;
+            opacity: 0.3;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+        }
+
+        /* Scan Line Effect */
+        .scan-line {
+            position: absolute; left: 0; width: 100%; height: 10px;
+            background: linear-gradient(to bottom, transparent, rgba(34, 197, 94, 0.1), transparent);
+            animation: scan-line 8s linear infinite;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); animation: glow-pulse 8s ease-in-out infinite; }
+        
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(34, 197, 94, 0.6);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+            animation: float-particle 10s ease-in-out infinite;
+        }
+
+        /* Stars */
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+        
+        /* === SIDEBAR LAYOUT === */
+        .app-layout { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(10, 22, 18, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar:hover { width: 220px; }
+        .sidebar:hover .nav-text { opacity: 1; transform: translateX(0); }
+        .sidebar:hover .logo-text { opacity: 1; }
+        
+        .main-content-area {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            position: relative;
+            z-index: 1;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .nav-text {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .logo-text { opacity: 0; transition: opacity 0.3s; }
+
+        /* === COMPONENTS === */
+        .glass-card {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-style: preserve-3d; 
+            will-change: transform;
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset;
+            transform: translateY(-5px);
+        }
+
+        /* === TYPOGRAPHY === */
+        .text-gradient {
+            background: linear-gradient(135deg, #fff 0%, #86efac 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 60px rgba(134, 239, 172, 0.4);
+        }
+        .text-glow { text-shadow: 0 0 30px rgba(255,255,255,0.15); }
+        
+        /* === LAYOUTS === */
+        .page { display: none; }
+        .page.active { display: block; animation: fadeUp 0.6s ease forwards; }
+        
+        /* Map Styles - Professional Dark Mode */
+        #map { height: 100%; width: 100%; z-index: 1; background: #000; }
+        .leaflet-container { background: #000; font-family: 'Inter', sans-serif; }
+        .leaflet-popup-content-wrapper { background: rgba(10, 10, 10, 0.95); color: #fff; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .leaflet-popup-tip { background: rgba(10, 10, 10, 0.95); border: 1px solid rgba(255,255,255,0.05); }
+        .leaflet-control-zoom { border: none !important; }
+        .leaflet-control-zoom a { background: rgba(0,0,0,0.8) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        .leaflet-control-zoom a:hover { background: rgba(34, 197, 94, 0.2) !important; border-color: #22c55e !important; }
+        .leaflet-control-attribution { background: transparent !important; color: #333 !important; font-size: 9px; }
+        .leaflet-control-attribution a { color: #444 !important; }
+
+        /* Others */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); z-index: 200; display: none; place-items: center; }
+        .modal-box { background: #050505; border: 1px solid rgba(255,255,255,0.1); padding: 2rem; border-radius: 1.5rem; width: 90%; max-width: 500px; z-index: 201; position: relative; box-shadow: 0 50px 100px rgba(0,0,0,0.5); }
+        .modal-overlay.active { display: grid; animation: fadeUp 0.3s ease; }
+        
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 12px 24px; background: #fff; color: #000; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 9999; opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .input-dark { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; transition: all 0.2s; }
+        .input-dark:focus { outline: none; border-color: var(--brand); background: rgba(255,255,255,0.08); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); }
+        
+        /* Responsive Sidebar */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 240px; }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar:hover { width: 240px; }
+            .nav-text, .logo-text { opacity: 1; transform: none; }
+            .main-content-area { margin-left: 0; }
+        }
+
+        /* Active Nav Link */
+        .nav-item.active { background: rgba(34, 197, 94, 0.1); border-left: 3px solid var(--brand); }
+        html[dir="rtl"] .nav-item.active { border-left: none; border-right: 3px solid var(--brand); }
+
+        /* === ORBIT SYSTEM === */
+        .orbit-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .orbit-center { position: absolute; z-index: 10; }
+        .orbit-item { position: absolute; top: 50%; left: 50%; width: 160px; height: 160px; margin-top: -80px; margin-left: -80px; animation: orbit var(--duration, 20s) linear infinite; animation-delay: var(--delay, 0s); pointer-events: none; }
+        .orbit-item > div { pointer-events: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        /* === SPLASH SCREEN === */
+        #splash { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* === CHATBOT === */
+        #chatbot-btn { position: fixed; bottom: 24px; right: 24px; z-index: 150; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; }
+        #chatbot-btn:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(34, 197, 94, 0.5); }
+        #chatbot-window { position: fixed; bottom: 100px; right: 24px; z-index: 149; width: 360px; height: 500px; max-height: 70vh; background: #050505; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); display: none; flex-direction: column; overflow: hidden; transform: translateY(20px); opacity: 0; transition: all 0.3s ease; }
+        #chatbot-window.active { display: flex; transform: translateY(0); opacity: 1; }
+        .chat-message-bot { background: rgba(255,255,255,0.05); border-radius: 0 16px 16px 16px; padding: 10px 14px; max-width: 80%; font-size: 14px; }
+        .chat-message-user { background: #22c55e; color: #000; border-radius: 16px 0 16px 16px; padding: 10px 14px; max-width: 80%; font-size: 14px; font-weight: 500; }
+        .landing-footer { border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
+
+        /* === MARKETPLACE ENHANCEMENTS === */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .cat-pill.active { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5); color: #fff; }
+        
+        /* Range Slider Style */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { border: 2px solid #22c55e; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; -webkit-appearance: none; margin-top: -6px; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+        input[type=range]::-moz-range-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        input[type=range]::-moz-range-thumb { border: 2px solid #22c55e; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -6px; }
+
+        /* Floating Data Points */
+        .float-data {
+            position: absolute;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 8px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* === AUTH PAGES PRO STYLING === */
+        .auth-bg {
+            position: relative; overflow: hidden;
+        }
+        .auth-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(34, 197, 94, 0.1), transparent 30%);
+            animation: rotate 10s linear infinite;
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+
+        /* Chat UI Pro */
+        .chat-bubble-user { 
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); 
+            color: #000; 
+            border-radius: 20px 20px 4px 20px; 
+        }
+        .chat-bubble-bot { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px 20px 20px 4px; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="spinner"></div>
+        <h1 class="font-display text-white text-2xl tracking-widest mt-6 opacity-80">RECYCONNECT</h1>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Modals Overlay -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal()"></div>
+
+    <!-- Chatbot Window -->
+    <div id="chatbot-window">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between bg-black/50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center"><svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+                <span class="font-semibold text-white text-sm">RecyBot</span>
+            </div>
+            <button onclick="toggleChatbot()" class="text-gray-500 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div id="chatbot-messages" class="flex-1 p-4 space-y-3 overflow-y-auto"></div>
+        <div class="p-3 border-t border-white/10">
+            <div class="flex gap-2">
+                <input type="text" id="chatbot-input" placeholder="Type a message..." class="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
+                <button onclick="sendBotMessage()" class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center hover:bg-brand-600 transition"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Button -->
+    <div id="chatbot-btn" onclick="toggleChatbot()"><svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+
+    <!-- ==================== APP LAYOUT ==================== -->
+    <div class="app-layout">
+        
+        <!-- ==================== SIDEBAR NAVIGATION ==================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="flex flex-col items-center py-6 w-full">
+                <!-- Logo -->
+                <a href="#" onclick="showPage('landing')" class="flex items-center gap-3 mb-12 w-full px-4 justify-center md:justify-start">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/30 flex-shrink-0">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <span class="font-display font-bold text-lg text-white logo-text">RecyConnect</span>
+                </a>
+
+                <!-- Navigation Links -->
+                <nav class="flex flex-col gap-2 w-full px-3 flex-1">
+                    <a href="#" onclick="showPage('landing')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition group" id="nav-landing">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Home</span>
+                    </a>
+                    
+                    <button onclick="showToast('No new notifications')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition w-full group relative">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Notifications</span>
+                        <span class="absolute top-3 right-4 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    </button>
+
+                    <a href="#" onclick="showPage('marketplace')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition group" id="nav-marketplace">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Market</span>
+                    </a>
+                    <a href="#" onclick="showPage('map')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition group" id="nav-map">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Map</span>
+                    </a>
+                    <a href="#" onclick="showPage('chat')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition group relative" id="nav-chat">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Chat</span>
+                        <span id="chatBadgeNav" class="absolute top-2 right-2 w-2 h-2 bg-brand-500 rounded-full hidden"></span>
+                    </a>
+                </nav>
+
+                <!-- Bottom Actions -->
+                <div class="w-full px-3 mt-auto border-t border-white/5 pt-4">
+                    <button onclick="toggleLang()" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition w-full group">
+                        <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0 flex justify-center">
+                            <span id="langLabel" class="text-xs font-bold">EN</span>
+                        </div>
+                        <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Language</span>
+                    </button>
+
+                    <div id="authBtns">
+                        <a href="#" onclick="showPage('login')" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition w-full group">
+                            <div class="w-5 h-5 text-gray-400 group-hover:text-white transition flex-shrink-0 flex justify-center">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </div>
+                            <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition">Login</span>
+                        </a>
+                    </div>
+                    
+                    <div id="userMenu" class="hidden">
+                        <a href="#" onclick="showPage('profile')" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 transition w-full group">
+                            <div class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-xs font-bold flex-shrink-0" id="userAvatarNav">U</div>
+                            <span class="nav-text text-sm font-medium text-gray-400 group-hover:text-white transition truncate" id="userNameNav">User</span>
+                        </a>
+                        <button onclick="logout()" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-red-500/10 transition w-full group text-red-400">
+                            <div class="w-5 h-5 flex-shrink-0 flex justify-center">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            </div>
+                            <span class="nav-text text-sm font-medium transition">Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Overlay -->
+        <div id="mobileOverlay" class="fixed inset-0 bg-black/60 z-50 hidden md:hidden" onclick="toggleMobileSidebar()"></div>
+
+        <!-- ==================== MAIN CONTENT AREA ==================== -->
+        <main class="main-content-area">
+            
+            <!-- Mobile Top Bar -->
+            <div class="md:hidden fixed top-0 left-0 right-0 h-16 glass-card z-40 flex items-center px-4 justify-between">
+                <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg hover:bg-white/5">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <span class="font-display font-bold text-white">RecyConnect</span>
+                </div>
+                <div class="w-10"></div>
+            </div>
+
+            <!-- ==================== PAGE: LANDING ==================== -->
+            <div id="page-landing" class="page active pt-20 md:pt-0">
+                <!-- Dynamic Background -->
+                <div class="bg-dynamic">
+                    <div class="grid-mesh"></div>
+                    <div class="scan-line"></div>
+                    <div class="orb" style="width: 600px; height: 600px; top: -10%; left: -10%; background: #22c55e; opacity: 0.15;"></div>
+                    <div class="orb" style="width: 500px; height: 500px; bottom: -5%; right: -5%; background: #3b82f6; opacity: 0.10; animation-delay: 2s;"></div>
+                    <div class="particle" style="top: 20%; left: 20%; animation-duration: 12s;"></div>
+                    <div class="particle" style="top: 80%; left: 80%; animation-duration: 15s; animation-delay: 2s;"></div>
+                    <div class="particle" style="top: 40%; left: 60%; animation-duration: 18s; animation-delay: 4s; width: 6px; height: 6px;"></div>
+                    <div class="particle" style="top: 60%; left: 30%; animation-duration: 11s; animation-delay: 1s;"></div>
+                    <div class="particle" style="top: 10%; left: 90%; animation-duration: 14s; animation-delay: 3s;"></div>
+                    <div class="particle" style="top: 50%; left: 10%; animation-duration: 13s; animation-delay: 5s; width: 3px; height: 3px;"></div>
+                    <div class="particle" style="top: 15%; left: 50%; animation-duration: 16s; animation-delay: 1.5s;"></div>
+                    <div class="star" style="top: 15%; left: 25%; animation-delay: 0.5s;"></div>
+                    <div class="star" style="top: 25%; left: 85%; animation-delay: 1.2s;"></div>
+                    <div class="star" style="top: 65%; left: 15%; animation-delay: 2.5s;"></div>
+                    <div class="star" style="top: 85%; left: 55%; animation-delay: 0.8s;"></div>
+                    <div class="star" style="top: 45%; left: 75%; animation-delay: 1.8s;"></div>
+                    <div class="star" style="top: 5%; left: 5%; animation-delay: 3s;"></div>
+                    <div class="star" style="top: 35%; left: 95%; animation-delay: 2s;"></div>
+                </div>
+
+                <section class="min-h-screen relative flex items-center overflow-hidden">
+                    <div class="max-w-7xl mx-auto px-6 py-12 relative z-10 w-full">
+                        <div class="grid lg:grid-cols-2 gap-16 items-center">
+                            <div class="text-center lg:text-left">
+                                <div class="reveal inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-xs text-brand-400 mb-8 tracking-wider backdrop-blur-sm"><span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span>CIRCULAR ECONOMY PLATFORM</div>
+                                <h1 class="reveal delay-1 font-display text-6xl lg:text-8xl font-bold text-white leading-[0.9] mb-8 tracking-tighter text-glow">Turn <span class="text-gradient">Waste</span><br>Into Wealth.</h1>
+                                <p class="reveal delay-2 text-gray-400 text-xl mb-10 max-w-lg mx-auto lg:mx-0 leading-relaxed font-light">The premium marketplace connecting recyclers globally. Trade, negotiate, and track environmental impact.</p>
+                                <div class="reveal delay-3 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                    <button onclick="showPage('marketplace')" class="px-10 py-4 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition shadow-2xl shadow-white/5 flex items-center justify-center gap-2 group text-lg">Explore Materials <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg></button>
+                                    <button onclick="showPage('register')" class="px-10 py-4 border border-white/10 text-white rounded-lg font-bold hover:bg-white/5 transition backdrop-blur-sm text-lg">Join Network</button>
+                                </div>
+                                <div class="reveal mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 py-8 border-t border-b border-white/5 bg-white/[0.02] rounded-xl">
+                                    <div class="text-center"><div class="text-2xl font-bold text-white">15K+</div><div class="text-xs text-gray-500">Tons Recycled</div></div>
+                                    <div class="text-center"><div class="text-2xl font-bold text-white">50+</div><div class="text-xs text-gray-500">Active Cities</div></div>
+                                    <div class="text-center"><div class="text-2xl font-bold text-white">99%</div><div class="text-xs text-gray-500">Happy Users</div></div>
+                                    <div class="text-center"><div class="text-2xl font-bold text-white">24/7</div><div class="text-xs text-gray-500">Support</div></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right Side: Orbiting Cards (Updated with Pulse & Data) -->
+                            <div class="reveal hidden lg:flex items-center justify-center h-[600px] relative">
+                                <div class="orbit-container">
+                                    <div class="orbit-center"><div class="w-24 h-24 rounded-full bg-gradient-to-br from-brand-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-brand-500/30 animate-pulse relative z-10"><svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div></div>
+                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                        <div class="absolute w-24 h-24 rounded-full border border-brand-500/30 animate-ping" style="animation-duration: 3s;"></div>
+                                        <div class="absolute w-40 h-40 rounded-full border border-brand-500/20 animate-ping" style="animation-duration: 3s; animation-delay: 0.5s;"></div>
+                                        <div class="absolute w-56 h-56 rounded-full border border-brand-500/10 animate-ping" style="animation-duration: 3s; animation-delay: 1s;"></div>
+                                    </div>
+                                    <div class="absolute top-0 right-0 w-36 h-32 flex flex-col justify-between p-3 opacity-70 z-10">
+                                        <div class="float-data" style="animation-delay: 0s;"><div class="flex items-center gap-2 text-[10px] text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span><span>User Active</span></div></div>
+                                        <div class="float-data" style="animation-delay: 1.5s; margin-left: 20px;"><div class="flex items-center gap-2 text-[10px] text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span><span>+3 New Listings</span></div></div>
+                                    </div>
+                                    <div class="orbit-item" style="--delay: 0s; --radius: 220px; --duration: 25s; --start-angle: 0deg;"><div class="glass-card w-40 h-40 flex flex-col items-center justify-center text-center p-4 hover:border-brand-500/50 transition-all duration-300 hover:scale-105" data-tilt><div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center mb-2"><svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></div><h3 class="font-bold text-sm text-white mb-1">Recycling</h3><p class="text-[10px] text-gray-400">Any Recyclable Material</p></div></div>
+                                    <div class="orbit-item" style="--delay: -6.25s; --radius: 220px; --duration: 25s; --start-angle: 90deg;"><div class="glass-card w-40 h-40 flex flex-col items-center justify-center text-center p-4 hover:border-amber-500/50 transition-all duration-300 hover:scale-105" data-tilt><div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center mb-2"><svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div><h3 class="font-bold text-sm text-white mb-1">Food Surplus</h3><p class="text-[10px] text-gray-400">Donate Excess Food</p></div></div>
+                                    <div class="orbit-item" style="--delay: -12.5s; --radius: 220px; --duration: 25s; --start-angle: 180deg;"><div class="glass-card w-40 h-40 flex flex-col items-center justify-center text-center p-4 hover:border-green-500/50 transition-all duration-300 hover:scale-105" data-tilt><div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center mb-2"><svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><h3 class="font-bold text-sm text-white mb-1">Agri Waste</h3><p class="text-[10px] text-gray-400">Transform Resources</p></div></div>
+                                    <div class="orbit-item" style="--delay: -18.75s; --radius: 220px; --duration: 25s; --start-angle: 270deg;"><div class="glass-card w-40 h-40 flex flex-col items-center justify-center text-center p-4 hover:border-blue-500/50 transition-all duration-300 hover:scale-105" data-tilt><div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-2"><svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 9c-7.834 0-10.667 5.333-11 6.255V18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4.745zM12 9c-3.183 0-6.22.62-9 1.745M12 9c3.183 0 6.22.62 9 1.745M12 9V5m0 0L9 2m3 3l3-3"/></svg></div><h3 class="font-bold text-sm text-white mb-1">Job Opportunities</h3><p class="text-[10px] text-gray-400">Green Economy Jobs</p></div></div>
+                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-[300px] h-[300px] border border-brand-500/10 rounded-full absolute"></div><div class="w-[440px] h-[440px] border border-white/5 rounded-full absolute"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sections Below -->
+                        <div class="py-20 mt-10 border-t border-white/5">
+                             <div class="text-center mb-12"><h2 class="reveal font-display text-4xl font-bold text-white mb-2">The Problem We Solve</h2><p class="reveal delay-1 text-gray-600 text-sm">Inefficiencies in the recycling supply chain</p></div>
+                             <div class="grid md:grid-cols-3 gap-8">
+                                <div class="reveal delay-1 glass-card p-6 text-center hover:border-red-500/30 group" data-tilt><div class="w-14 h-14 mx-auto rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400 group-hover:scale-110 transition-transform"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg></div><h3 class="font-bold text-white mb-2 text-lg">Disconnected Market</h3><p class="text-xs text-gray-500">Sellers and buyers struggle to connect efficiently</p></div>
+                                <div class="reveal delay-2 glass-card p-6 text-center hover:border-amber-500/30 group" data-tilt><div class="w-14 h-14 mx-auto rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400 group-hover:scale-110 transition-transform"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><h3 class="font-bold text-white mb-2 text-lg">Value Loss</h3><p class="text-xs text-gray-500">Economic value lost in landfills</p></div>
+                                <div class="reveal delay-3 glass-card p-6 text-center hover:border-blue-500/30 group" data-tilt><div class="w-14 h-14 mx-auto rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-transform"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-2.332 9-7.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div><h3 class="font-bold text-white mb-2 text-lg">Trust Deficit</h3><p class="text-xs text-gray-500">No secure channels for transactions</p></div>
+                             </div>
+                        </div>
+                        <div class="py-16 border-t border-white/5"><h2 class="reveal font-display text-4xl font-bold text-white mb-8 text-center">Platform Features</h2><div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4"><div class="reveal delay-1 glass-card p-6 hover:border-brand-500/30 group" data-tilt><div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mb-4 text-brand-400 group-hover:scale-110 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div><h3 class="font-bold text-white mb-1">Geo-Located</h3><p class="text-gray-600 text-xs">Find materials near you.</p></div><div class="reveal delay-2 glass-card p-6 hover:border-blue-500/30 group" data-tilt><div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><h3 class="font-bold text-white mb-1">Secure Chat</h3><p class="text-gray-600 text-xs">Encrypted negotiation.</p></div><div class="reveal delay-3 glass-card p-6 hover:border-amber-500/30 group" data-tilt><div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400 group-hover:scale-110 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><h3 class="font-bold text-white mb-1">Smart Offers</h3><p class="text-gray-600 text-xs">Transparent pricing.</p></div><div class="reveal delay-4 glass-card p-6 hover:border-teal-500/30 group" data-tilt><div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mb-4 text-teal-400 group-hover:scale-110 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div><h3 class="font-bold text-white mb-1">Fast Trading</h3><p class="text-gray-600 text-xs">Instant connections.</p></div></div></div>
+                         <div class="py-16 border-t border-white/5"><div class="flex justify-between items-center mb-8"><h2 class="reveal font-display text-3xl font-bold text-white">Trending Materials</h2><a href="#" onclick="showPage('marketplace')" class="reveal text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 group">View All <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></a></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="trendingGrid"></div></div>
+                    </div>
+                </section>
+
+                <!-- FOOTER -->
+                <footer class="landing-footer relative z-20 py-16">
+                    <div class="max-w-7xl mx-auto px-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                            <div><div class="flex items-center gap-2 mb-4"><div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center"><svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="font-display font-bold text-white">RecyConnect</span></div><p class="text-xs text-gray-600">Building a sustainable future through circular economy.</p></div>
+                            <div><h4 class="font-bold text-white mb-4 text-sm">Platform</h4><ul class="space-y-2 text-xs text-gray-500"><li><a href="#" onclick="showPage('marketplace')" class="hover:text-white transition">Marketplace</a></li><li><a href="#" onclick="showPage('map')" class="hover:text-white transition">Map View</a></li><li><a href="#" onclick="showPage('register')" class="hover:text-white transition">Join Network</a></li></ul></div>
+                            <div><h4 class="font-bold text-white mb-4 text-sm">Resources</h4><ul class="space-y-2 text-xs text-gray-500"><li><a href="#" class="hover:text-white transition">Documentation</a></li><li><a href="#" class="hover:text-white transition">API Access</a></li><li><a href="#" class="hover:text-white transition">Partners</a></li></ul></div>
+                            <div><h4 class="font-bold text-white mb-4 text-sm">Contact</h4><p class="text-xs text-gray-500">hello@recyconnect.io</p><div class="flex gap-3 mt-4"><a href="#" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></a><a href="#" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a></div></div>
+                        </div>
+                        <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"><p class="text-xs text-gray-700">© 2023 RecyConnect. All rights reserved.</p><div class="flex gap-6 text-xs text-gray-700"><a href="#" class="hover:text-white transition">Privacy Policy</a><a href="#" class="hover:text-white transition">Terms of Service</a></div></div>
+                    </div>
+                </footer>
+            </div>
+
+            <!-- ==================== PAGE: MARKETPLACE (UPDATED) ==================== -->
+            <div id="page-marketplace" class="page pt-20 md:pt-8">
+                <div class="max-w-7xl mx-auto p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div><h1 class="text-3xl font-bold text-white">Marketplace</h1><p class="text-sm text-gray-500 mt-1">Find quality materials near you</p></div>
+                        <button onclick="openModal('addListingModal')" class="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-semibold hover:bg-brand-600 transition flex items-center gap-2 shadow-lg shadow-brand-500/20"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Add Listing</button>
+                    </div>
+                    <div class="glass-card p-4 mb-6 rounded-2xl">
+                        <div class="flex flex-col md:flex-row justify-between gap-4">
+                            <div class="flex flex-wrap items-center gap-3 flex-1">
+                                <div class="relative flex-1 min-w-[200px]">
+                                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <input type="text" id="searchInput" placeholder="Search materials..." class="w-full pl-9 pr-3 py-2 text-sm rounded-lg input-dark border-none" oninput="filterListings()">
+                                </div>
+                                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                    <button onclick="setCategory('')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 hover:border-brand-500/50 transition whitespace-nowrap" data-cat="">All</button>
+                                    <button onclick="setCategory('Plastic')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 hover:border-brand-500/50 transition whitespace-nowrap" data-cat="Plastic">Plastic</button>
+                                    <button onclick="setCategory('Metal')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 hover:border-brand-500/50 transition whitespace-nowrap" data-cat="Metal">Metal</button>
+                                    <button onclick="setCategory('Paper')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 hover:border-brand-500/50 transition whitespace-nowrap" data-cat="Paper">Paper</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 border-l border-white/5 pl-4">
+                                <div class="relative">
+                                    <select id="sortSelect" onchange="filterListings()" class="appearance-none bg-dark-700 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none cursor-pointer"><option value="newest">Newest</option><option value="price_high">Price: High</option><option value="price_low">Price: Low</option></select>
+                                    <svg class="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                                <div class="flex items-center bg-dark-700 rounded-lg p-1 border border-white/10">
+                                    <button onclick="setView('grid')" id="gridBtn" class="p-1.5 rounded-md bg-white/10 text-white transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg></button>
+                                    <button onclick="setView('list')" id="listBtn" class="p-1.5 rounded-md text-gray-500 hover:text-white transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                             <div class="flex justify-between text-xs text-gray-500 mb-2"><span>Price Range</span><span id="priceRangeVal">$0 - $2000+</span></div>
+                             <input type="range" min="0" max="2000" value="2000" class="w-full" id="priceRange" oninput="updatePriceLabel(); filterListings();">
+                        </div>
+                    </div>
+                    <div id="listingGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+                    <div id="emptyState" class="hidden text-center py-20"><svg class="w-16 h-16 mx-auto text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><h3 class="text-white font-semibold mb-1">No listings found</h3><p class="text-sm text-gray-600">Try adjusting your filters.</p></div>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: MAP (PRO) ==================== -->
+            <div id="page-map" class="page">
+                <div class="pt-16 md:pt-0 h-screen flex flex-col relative">
+                    <!-- Floating Filter Pills -->
+                    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                        <button onclick="filterMapMarkers('')" class="px-4 py-2 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-bold border border-white/10 hover:border-brand-500/50 transition shadow-lg">All</button>
+                        <button onclick="filterMapMarkers('Plastic')" class="px-4 py-2 rounded-full bg-black/60 backdrop-blur-md text-gray-400 text-xs font-bold border border-white/10 hover:border-brand-500/50 transition shadow-lg">Plastic</button>
+                        <button onclick="filterMapMarkers('Metal')" class="px-4 py-2 rounded-full bg-black/60 backdrop-blur-md text-gray-400 text-xs font-bold border border-white/10 hover:border-brand-500/50 transition shadow-lg">Metal</button>
+                    </div>
+                    <div class="flex-1 relative border-0">
+                        <div id="map" class="w-full h-full rounded-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LISTING DETAIL ==================== -->
+            <div id="page-listing" class="page pt-20 md:pt-8"><div class="max-w-4xl mx-auto p-6"><div class="glass-card rounded-3xl overflow-hidden"><div id="detailImage" class="h-64 bg-dark-700 relative flex items-center justify-center"><span id="detailCategoryBadge" class="absolute top-4 left-4 px-3 py-1 rounded-full bg-brand-500 text-white text-xs font-bold">Category</span></div><div class="p-8"><div class="flex justify-between items-start mb-6"><div><h1 id="detailTitle" class="text-3xl font-bold text-white mb-1">Title</h1><div id="detailLocation" class="text-sm text-gray-500 flex items-center gap-1 mt-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>Location</div></div><div class="text-right"><div id="detailPrice" class="text-3xl font-bold text-brand-400">$0</div><div id="detailQuantity" class="text-xs text-gray-500">per 0 kg</div></div></div><p id="detailDescription" class="text-gray-400 border-l-2 border-brand-500 pl-4 mb-8 text-sm leading-relaxed">Description</p><div class="flex items-center gap-4 mb-6 bg-white/5 p-4 rounded-xl border border-white/5"><div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center text-xs font-bold text-white" id="detailSellerAvatar">S</div><div><div id="detailSellerName" class="font-semibold text-sm text-white">Seller</div><div class="text-xs text-gray-500">Member since 2023</div></div></div><div class="flex gap-3" id="buyerActions"><button onclick="openModal('offerModal')" class="flex-1 py-3 bg-brand-500 text-white rounded-xl font-semibold hover:bg-brand-600 transition">Make Offer</button><button onclick="contactSeller()" class="flex-1 py-3 border border-white/10 text-white rounded-xl font-semibold hover:bg-white/5 transition">Message Seller</button></div><div id="ownerActions" class="hidden"><button onclick="deleteListing()" class="w-full py-3 border border-red-500/50 text-red-400 rounded-xl font-semibold hover:bg-red-500/10 transition">Delete Listing</button></div></div></div></div></div>
+
+            <!-- ==================== PAGE: CHAT (PRO) ==================== -->
+            <div id="page-chat" class="page">
+                <div class="pt-16 md:pt-0 h-screen flex flex-col md:flex-row">
+                    <!-- Sidebar -->
+                    <div class="w-full md:w-80 bg-dark-800 border-r border-white/5 flex flex-col">
+                        <div class="p-4 border-b border-white/5 flex items-center justify-between">
+                            <h2 class="font-bold text-white text-lg">Messages</h2>
+                            <div class="w-8 h-8 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold">2</div>
+                        </div>
+                        <div id="chatList" class="flex-1 overflow-y-auto"></div>
+                    </div>
+                    <!-- Main Chat -->
+                    <div class="flex-1 flex flex-col bg-dark-900">
+                        <!-- Header -->
+                        <div class="bg-dark-800 border-b border-white/5 p-4 flex items-center gap-3 shadow-sm">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white" id="chatPartnerAvatar">S</div>
+                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-brand-500 border-2 border-dark-800 rounded-full"></span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm text-white" id="chatPartnerName">Select Chat</div>
+                                <div class="text-[10px] text-gray-500">Online</div>
+                            </div>
+                        </div>
+                        <!-- Messages -->
+                        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]"></div>
+                        <!-- Input -->
+                        <div class="bg-dark-800 border-t border-white/5 p-3 flex gap-2">
+                            <button class="p-2 text-gray-500 hover:text-white transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg></button>
+                            <input type="text" id="msgInput" placeholder="Type a message..." class="flex-1 px-4 py-2 text-sm rounded-full input-dark border-none" onkeypress="if(event.key==='Enter')sendMessage()">
+                            <button onclick="sendMessage()" class="p-2 bg-brand-500 text-white rounded-full hover:bg-brand-600 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PROFILE ==================== -->
+            <div id="page-profile" class="page pt-20 md:pt-8"><div class="max-w-4xl mx-auto p-6"><div class="glass-card rounded-3xl p-8 text-center"><div class="w-20 h-20 mx-auto rounded-full bg-brand-500/20 border-2 border-brand-500 flex items-center justify-center text-2xl font-bold text-brand-400 mb-4" id="profileAvatar">U</div><h1 id="profileName" class="text-2xl font-bold text-white">User Name</h1><p id="profileEmail" class="text-sm text-gray-500 mb-6">email@example.com</p><div class="grid grid-cols-3 gap-4 mb-8"><div class="p-4 bg-white/5 rounded-xl border border-white/5"><div id="profileListings" class="text-xl font-bold text-white">0</div><div class="text-xs text-gray-500">Listings</div></div><div class="p-4 bg-white/5 rounded-xl border border-white/5"><div id="profileTrans" class="text-xl font-bold text-white">0</div><div class="text-xs text-gray-500">Sales</div></div><div class="p-4 bg-white/5 rounded-xl border border-white/5"><div id="profileRating" class="text-xl font-bold text-brand-400">-</div><div class="text-xs text-gray-500">Rating</div></div></div><button onclick="logout()" class="px-6 py-2 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 transition text-sm font-semibold">Logout</button></div></div></div>
+
+            <!-- ==================== ADMIN ==================== -->
+            <div id="page-admin" class="page pt-0"><div class="grid md:grid-cols-[1fr] min-h-screen"><main class="bg-dark-900 min-h-screen p-6"><h1 class="text-2xl font-bold text-white mb-6">Dashboard Overview</h1><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"><div class="glass-card p-5"><div class="text-sm text-gray-500 mb-1">Total Users</div><div id="statUsers" class="text-2xl font-bold text-white">0</div></div><div class="glass-card p-5"><div class="text-sm text-gray-500 mb-1">Listings</div><div id="statListings" class="text-2xl font-bold text-white">0</div></div><div class="glass-card p-5"><div class="text-sm text-gray-500 mb-1">Transactions</div><div id="statTrans" class="text-2xl font-bold text-white">0</div></div><div class="glass-card p-5"><div class="text-sm text-gray-500 mb-1">Revenue</div><div id="statRevenue" class="text-2xl font-bold text-brand-400">$0</div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="glass-card p-6"><h3 class="font-semibold mb-4 text-white">Monthly Growth</h3><canvas id="growthChart" height="200"></canvas></div><div class="glass-card p-6"><h3 class="font-semibold mb-4 text-white">Category Distribution</h3><canvas id="categoryChart" height="200"></canvas></div></div></main></div></div>
+
+            <!-- ==================== AUTH: LOGIN (PRO) ==================== -->
+            <div id="page-login" class="page">
+                <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+                     <!-- Animated Background -->
+                     <div class="absolute inset-0 bg-dynamic"><div class="grid-mesh"></div><div class="orb" style="width: 400px; height: 400px; top: 20%; right: -10%; background: #22c55e; opacity: 0.1;"></div></div>
+                     <div class="relative z-10 w-full max-w-md">
+                         <!-- Logo -->
+                         <div class="text-center mb-8">
+                             <div class="w-16 h-16 mx-auto rounded-2xl bg-brand-500 flex items-center justify-center shadow-2xl shadow-brand-500/30 mb-4">
+                                 <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                             </div>
+                             <h1 class="font-display text-3xl font-bold text-white">Welcome Back</h1>
+                             <p class="text-gray-500 text-sm mt-1">Sign in to continue</p>
+                         </div>
+                         <!-- Card -->
+                         <div class="glass-card rounded-2xl p-8 border border-white/10">
+                             <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
+                                 <div>
+                                     <label class="text-xs text-gray-500 mb-1 block">Email</label>
+                                     <input type="email" name="email" required class="w-full px-4 py-3 rounded-xl input-dark text-sm" placeholder="Enter your email">
+                                 </div>
+                                 <div>
+                                     <label class="text-xs text-gray-500 mb-1 block">Password</label>
+                                     <input type="password" name="password" required class="w-full px-4 py-3 rounded-xl input-dark text-sm" placeholder="••••••••">
+                                 </div>
+                                 <button type="submit" class="w-full py-3 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600 transition text-sm shadow-lg shadow-brand-500/20">Sign In</button>
+                             </form>
+                             <div class="mt-6 text-center">
+                                 <p class="text-xs text-gray-600">Don't have an account? <a href="#" onclick="showPage('register')" class="text-brand-400 hover:underline font-semibold">Sign up</a></p>
+                             </div>
+                             <div class="mt-4 pt-4 border-t border-white/5">
+                                <p class="text-[10px] text-center text-gray-700">Demo: ahmed@demo.com / demo123</p>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+
+            <!-- ==================== AUTH: REGISTER (PRO) ==================== -->
+            <div id="page-register" class="page">
+                <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-dynamic"><div class="grid-mesh"></div><div class="orb" style="width: 400px; height: 400px; bottom: 10%; left: -10%; background: #3b82f6; opacity: 0.1;"></div></div>
+                    <div class="relative z-10 w-full max-w-md">
+                         <div class="text-center mb-8">
+                             <h1 class="font-display text-3xl font-bold text-white">Create Account</h1>
+                             <p class="text-gray-500 text-sm mt-1">Join the circular economy</p>
+                         </div>
+                         <div class="glass-card rounded-2xl p-8 border border-white/10">
+                             <form id="registerForm" class="space-y-4" onsubmit="handleRegister(event)">
+                                 <div>
+                                     <label class="text-xs text-gray-500 mb-1 block">Email</label>
+                                     <input type="email" name="email" required class="w-full px-4 py-3 rounded-xl input-dark text-sm" placeholder="you@example.com">
+                                 </div>
+                                 <div>
+                                     <label class="text-xs text-gray-500 mb-1 block">Password</label>
+                                     <input type="password" name="password" required class="w-full px-4 py-3 rounded-xl input-dark text-sm" placeholder="Create a password">
+                                 </div>
+                                 <button type="submit" class="w-full py-3 bg-white text-black rounded-xl font-bold hover:bg-gray-100 transition text-sm shadow-lg">Create Account</button>
+                             </form>
+                             <div class="mt-6 text-center">
+                                 <p class="text-xs text-gray-600">Already have an account? <a href="#" onclick="showPage('login')" class="text-brand-400 hover:underline font-semibold">Sign in</a></p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal Templates -->
+    <div id="addListingModal" class="hidden"><div class="modal-box" onclick="event.stopPropagation()"><div class="flex justify-between mb-4"><h3 class="font-bold text-white">Add Listing</h3><button onclick="closeModal()" class="text-gray-600 hover:text-white">X</button></div><form id="addForm" onsubmit="addListing(event)" class="space-y-3"><input name="title" placeholder="Title" required class="w-full px-3 py-2 border rounded text-sm input-dark"><select name="category" required class="w-full px-3 py-2 border rounded text-sm input-dark"><option value="Plastic">Plastic</option><option value="Metal">Metal</option><option value="Paper">Paper</option></select><input name="quantity" type="number" placeholder="Qty (kg)" required class="w-full px-3 py-2 border rounded text-sm input-dark"><input name="price" type="number" placeholder="Price ($)" required class="w-full px-3 py-2 border rounded text-sm input-dark"><input name="location" placeholder="Location" required class="w-full px-3 py-2 border rounded text-sm input-dark"><div id="locationPickerMap" style="height:150px;" class="rounded-lg border border-white/10"></div><input type="hidden" id="listingLat"><input type="hidden" id="listingLng"><button type="submit" class="w-full py-2 bg-brand-500 text-white rounded font-semibold text-sm">Submit</button></form></div></div>
+    <div id="offerModal" class="hidden"><div class="modal-box" onclick="event.stopPropagation()"><h3 class="font-bold mb-4 text-white">Make an Offer</h3><form onsubmit="makeOffer(event)" class="space-y-3"><input type="number" id="offerAmount" placeholder="Your Offer ($)" required class="w-full px-3 py-2 border rounded text-sm input-dark"><input type="hidden" id="offerListingId"><button type="submit" class="w-full py-2 bg-brand-500 text-white rounded font-semibold text-sm">Send Offer</button></form></div></div>
+
+    <script>
+        // ==================== SPLASH SCREEN ====================
+        window.addEventListener('load', () => { setTimeout(() => { const splash = document.getElementById('splash'); splash.style.opacity = '0'; setTimeout(() => { splash.style.display = 'none'; }, 500); }, 1500); });
+
+        // ==================== 3D PARALLAX ====================
+        document.addEventListener('mousemove', (e) => { const cards = document.querySelectorAll('[data-tilt]'); cards.forEach(card => { const rect = card.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; const centerX = rect.width / 2; const centerY = rect.height / 2; const rotateX = (y - centerY) / 20; const rotateY = (centerX - x) / 20; card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`; }); });
+        document.addEventListener('mouseleave', () => { const cards = document.querySelectorAll('[data-tilt]'); cards.forEach(card => { card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'; }); });
+
+        // ==================== DATABASE & STATE ====================
+        const DB = { get: k => JSON.parse(localStorage.getItem('rc_' + k) || 'null'), set: (k, v) => localStorage.setItem('rc_' + k, JSON.stringify(v)) };
+        let currentUser = DB.get('currentUser'); let currentListing = null; let currentChat = null; let map = null; let markers = []; let currentLang = 'en';
+        let currentView = 'grid'; let currentCategory = '';
+
+        // ==================== INIT ====================
+        document.addEventListener('DOMContentLoaded', () => { initDB(); checkAuth(); initCharts(); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('active'); }); }, { threshold: 0.1 }); document.querySelectorAll('.reveal').forEach(el => observer.observe(el)); });
+        function initDB() { if(!DB.get('init')) { const listings = [{ id: 1, title: 'HDPE Plastic Scrap', category: 'Plastic', quantity: 500, price: 250, location: 'Dubai', lat: 25.20, lng: 55.27, description: 'Clean industrial plastic waste.', sellerId: 'u1', sellerName: 'Ahmed', createdAt: Date.now(), views: 12 }, { id: 2, title: 'Copper Wire', category: 'Metal', quantity: 120, price: 1200, location: 'Abu Dhabi', lat: 24.45, lng: 54.37, description: 'High purity copper.', sellerId: 'u2', sellerName: 'Sara', createdAt: Date.now()-80000, views: 45 }]; const users = [{ id: 'u1', firstName: 'Ahmed', lastName: 'Khan', email: 'ahmed@demo.com', password: 'demo123', role: 'user' }, { id: 'u2', firstName: 'Sara', lastName: 'Ali', email: 'sara@demo.com', password: 'demo123', role: 'user' }]; DB.set('listings', listings); DB.set('users', users); DB.set('chats', []); DB.set('messages', []); DB.set('init', true); } }
+        function checkAuth() { currentUser = DB.get('currentUser'); updateUI(); }
+        function updateUI() { const auth = document.getElementById('authBtns'); const user = document.getElementById('userMenu'); if(currentUser) { auth.classList.add('hidden'); user.classList.remove('hidden'); document.getElementById('userAvatarNav').textContent = currentUser.firstName[0]; document.getElementById('userNameNav').textContent = currentUser.firstName; } else { auth.classList.remove('hidden'); user.classList.add('hidden'); } }
+
+        // ==================== AUTH ====================
+        function handleLogin(e) { e.preventDefault(); const email = e.target.email.value; const pass = e.target.password.value; const users = DB.get('users') || []; const found = users.find(u => u.email === email && u.password === pass); if(found) { currentUser = found; DB.set('currentUser', found); updateUI(); showPage('marketplace'); showToast('Welcome back!'); } else { showToast('Invalid credentials'); } }
+        function handleRegister(e) { e.preventDefault(); const email = e.target.email.value; const pass = e.target.password.value; const users = DB.get('users') || []; if(users.find(u => u.email === email)) return showToast('Email exists'); const newUser = { id: 'u_'+Date.now(), firstName: email.split('@')[0], email, password: pass, role: 'user' }; users.push(newUser); DB.set('users', users); currentUser = newUser; DB.set('currentUser', newUser); updateUI(); showPage('marketplace'); showToast('Account created'); }
+        function logout() { DB.remove('currentUser'); currentUser = null; updateUI(); showPage('landing'); showToast('Logged out'); }
+
+        // ==================== NAV ====================
+        function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); const navItem = document.getElementById('nav-' + id); if(navItem) navItem.classList.add('active'); window.scrollTo(0,0); if(id === 'marketplace') renderMarketplace(); if(id === 'map') setTimeout(initMap, 100); if(id === 'chat') renderChat(); if(id === 'profile') renderProfile(); if(id === 'admin' || id === 'landing') { updateStats(); renderTrending(); } }
+        function toggleMobileSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); sidebar.classList.toggle('open'); overlay.classList.toggle('hidden'); }
+        function toggleLang() { currentLang = currentLang === 'en' ? 'ar' : 'en'; document.documentElement.setAttribute('lang', currentLang); document.documentElement.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr'); document.getElementById('langLabel').textContent = currentLang.toUpperCase(); }
+
+        // ==================== MARKETPLACE ====================
+        function renderMarketplace() { document.getElementById('listingGrid').innerHTML = Array(4).fill().map(() => `<div class="glass-card h-64 animate-pulse"><div class="h-32 bg-dark-700"></div><div class="p-4 space-y-3"><div class="h-4 bg-dark-700 rounded w-3/4"></div><div class="h-3 bg-dark-700 rounded w-1/2"></div><div class="h-4 bg-dark-700 rounded w-1/4 mt-4"></div></div></div>`).join(''); setTimeout(() => { const listings = DB.get('listings') || []; renderGrid(listings); }, 500); }
+        function setCategory(cat) { currentCategory = cat; document.querySelectorAll('.cat-pill').forEach(btn => { if(btn.dataset.cat === cat) { btn.classList.add('active', 'bg-brand-500/20', 'border-brand-500', 'text-white'); btn.classList.remove('text-gray-400', 'bg-transparent'); } else { btn.classList.remove('active', 'bg-brand-500/20', 'border-brand-500', 'text-white'); btn.classList.add('text-gray-400', 'bg-transparent'); } }); filterListings(); }
+        function setView(view) { currentView = view; const grid = document.getElementById('listingGrid'); const gridBtn = document.getElementById('gridBtn'); const listBtn = document.getElementById('listBtn'); if(view === 'grid') { grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'; gridBtn.className = 'p-1.5 rounded-md bg-white/10 text-white transition'; listBtn.className = 'p-1.5 rounded-md text-gray-500 hover:text-white transition'; } else { grid.className = 'flex flex-col gap-4'; listBtn.className = 'p-1.5 rounded-md bg-white/10 text-white transition'; gridBtn.className = 'p-1.5 rounded-md text-gray-500 hover:text-white transition'; } filterListings(); }
+        function updatePriceLabel() { const val = document.getElementById('priceRange').value; document.getElementById('priceRangeVal').textContent = `$0 - $${val}`; }
+        function filterListings() { let listings = DB.get('listings') || []; const search = document.getElementById('searchInput').value.toLowerCase(); const sort = document.getElementById('sortSelect').value; const maxPrice = parseInt(document.getElementById('priceRange').value); if(search) listings = listings.filter(l => l.title.toLowerCase().includes(search) || l.location.toLowerCase().includes(search)); if(currentCategory) listings = listings.filter(l => l.category === currentCategory); listings = listings.filter(l => l.price <= maxPrice); if(sort === 'price_high') listings.sort((a,b) => b.price - a.price); else if(sort === 'price_low') listings.sort((a,b) => a.price - b.price); else listings.sort((a,b) => b.createdAt - a.createdAt); renderGrid(listings); }
+        function renderGrid(listings) { const grid = document.getElementById('listingGrid'); const empty = document.getElementById('emptyState'); if(listings.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; } empty.classList.add('hidden'); if(currentView === 'grid') { grid.innerHTML = listings.map(l => `<div class="glass-card overflow-hidden cursor-pointer group" onclick="viewListing(${l.id})" data-tilt><div class="h-32 bg-gradient-to-br from-dark-700 to-dark-800 relative flex items-end p-3"><span class="px-2 py-1 rounded bg-brand-500/20 text-brand-400 text-[10px] font-bold border border-brand-500/30">${l.category}</span><span class="absolute top-3 right-3 text-[10px] text-gray-700">${l.views} views</span></div><div class="p-4"><h3 class="font-bold text-white mb-1 text-sm truncate">${l.title}</h3><p class="text-xs text-gray-600 mb-3">${l.quantity} kg available</p><div class="flex justify-between items-center"><span class="font-bold text-brand-400 text-lg">$${l.price}</span><span class="text-[10px] text-gray-700 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>${l.location}</span></div></div></div>`).join(''); } else { grid.innerHTML = listings.map(l => `<div class="glass-card p-4 flex items-center gap-4 cursor-pointer hover:border-brand-500/30 transition" onclick="viewListing(${l.id})"><div class="w-16 h-16 rounded-lg bg-dark-700 flex items-center justify-center text-xs text-gray-600 font-bold flex-shrink-0">${l.category.substring(0,2).toUpperCase()}</div><div class="flex-1 min-w-0"><h3 class="font-bold text-white truncate">${l.title}</h3><p class="text-xs text-gray-500">${l.location} • ${l.quantity} kg</p></div><div class="text-right flex-shrink-0"><div class="font-bold text-brand-400 text-lg">$${l.price}</div><div class="text-[10px] text-gray-700">${l.views} views</div></div><svg class="w-5 h-5 text-gray-600 group-hover:text-white transition flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>`).join(''); } }
+        function viewListing(id) { const l = (DB.get('listings') || []).find(x => x.id === id); if(!l) return; currentListing = l; l.views++; DB.set('listings', DB.get('listings')); document.getElementById('detailTitle').textContent = l.title; document.getElementById('detailPrice').textContent = '$' + l.price; document.getElementById('detailQuantity').textContent = 'per ' + l.quantity + ' kg'; document.getElementById('detailLocation').innerHTML = `<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>` + l.location; document.getElementById('detailDescription').textContent = l.description; document.getElementById('detailCategoryBadge').textContent = l.category; document.getElementById('detailSellerName').textContent = l.sellerName; document.getElementById('detailSellerAvatar').textContent = l.sellerName[0]; const isOwner = currentUser && currentUser.id === l.sellerId; document.getElementById('buyerActions').classList.toggle('hidden', isOwner); document.getElementById('ownerActions').classList.toggle('hidden', !isOwner); showPage('listing'); }
+        function deleteListing() { if(!confirm('Delete this listing?')) return; let listings = DB.get('listings') || []; listings = listings.filter(x => x.id !== currentListing.id); DB.set('listings', listings); showPage('marketplace'); showToast('Deleted'); }
+
+        // ==================== TRENDING ====================
+        function renderTrending() { const listings = DB.get('listings') || []; const trending = listings.slice(0, 4); const grid = document.getElementById('trendingGrid'); if(!grid) return; grid.innerHTML = trending.map(l => `<div class="glass-card p-4 flex flex-col justify-between h-full hover:border-brand-500/30 transition cursor-pointer" onclick="viewListing(${l.id})"><div><span class="text-[10px] text-brand-400 font-bold uppercase tracking-wider">${l.category}</span><h3 class="font-bold text-white mt-1 text-sm">${l.title}</h3><p class="text-xs text-gray-500 mt-1">${l.location}</p></div><div class="mt-4 flex justify-between items-end"><span class="text-lg font-bold text-white">$${l.price}</span><span class="text-[10px] text-gray-600">${l.quantity}kg</span></div></div>`).join('') || '<p class="text-gray-500 text-sm col-span-4 text-center">No listings yet.</p>'; }
+
+        // ==================== MAP ====================
+        function initMap() { if(map) map.remove(); map = L.map('map', { zoomControl: true }).setView([25.0, 55.0], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '©OpenStreetMap, ©CartoDB', maxZoom: 19 }).addTo(map); addMarkers(); }
+        function addMarkers(filter = '') { markers.forEach(m => map.removeLayer(m)); markers = []; let listings = DB.get('listings') || []; if(filter) listings = listings.filter(l => l.category === filter); listings.forEach(l => { if(!l.lat) return; const myIcon = L.divIcon({className: 'my-div-icon', html: `<div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); box-shadow:0 0 20px #22c55e; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold;">${l.category[0]}</div>`, iconSize: [24,24], iconAnchor: [12,12]}); const m = L.marker([l.lat, l.lng], { icon: myIcon }).addTo(map); m.bindPopup(`<div style="color:#fff; background:rgba(0,0,0,0.9); padding:10px; border-radius:12px; min-width:150px;"><b class="text-brand-400">${l.title}</b><br><span style="color:#aaa">$${l.price} - ${l.quantity}kg</span><br><button onclick="viewListing(${l.id})" class="mt-2 w-full text-center block bg-brand-500 text-white text-xs py-1 rounded font-bold">View Details</button></div>`); markers.push(m); }); }
+        function filterMapMarkers(cat) { addMarkers(cat); }
+
+        // ==================== CHAT ====================
+        function renderChat() { if(!currentUser) return; const chats = DB.get('chats') || []; const userChats = chats.filter(c => c.participants.includes(currentUser.id)); const list = document.getElementById('chatList'); list.innerHTML = userChats.map(c => { const otherId = c.participants.find(p => p !== currentUser.id); const name = c.participantNames[otherId]; return `<div class="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 flex items-center gap-3" onclick="openChat('${c.id}')"><div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center text-xs font-bold text-white">${name[0]}</div><div><div class="font-semibold text-sm text-white">${name}</div><div class="text-xs text-gray-600">Tap to chat</div></div></div>`; }).join('') || '<div class="p-4 text-center text-xs text-gray-600 flex flex-col items-center justify-center h-full"><svg class="w-10 h-10 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>No conversations yet</div>'; }
+        function openChat(id) { currentChat = (DB.get('chats') || []).find(c => c.id === id); if(!currentChat) return; const otherId = currentChat.participants.find(p => p !== currentUser.id); document.getElementById('chatPartnerName').textContent = currentChat.participantNames[otherId]; document.getElementById('chatPartnerAvatar').textContent = currentChat.participantNames[otherId][0]; const msgs = (DB.get('messages') || []).filter(m => m.chatId === id); const container = document.getElementById('chatMessages'); container.innerHTML = msgs.map(m => `<div class="flex ${m.senderId === currentUser.id ? 'justify-end' : 'justify-start'}"><div class="${m.senderId === currentUser.id ? 'chat-bubble-user' : 'chat-bubble-bot'} px-4 py-2 text-sm max-w-[70%]">${m.text}</div></div>`).join(''); container.scrollTop = container.scrollHeight; }
+        function sendMessage() { if(!currentChat || !currentUser) return; const input = document.getElementById('msgInput'); if(!input.value.trim()) return; const msgs = DB.get('messages') || []; msgs.push({ id: Date.now(), chatId: currentChat.id, senderId: currentUser.id, text: input.value, timestamp: Date.now() }); DB.set('messages', msgs); input.value = ''; openChat(currentChat.id); }
+        function contactSeller() { if(!currentUser) { showToast('Login first'); showPage('login'); return; } if(!currentListing) return; const chats = DB.get('chats') || []; const chatId = [currentUser.id, currentListing.sellerId].sort().join('_'); if(!chats.find(c => c.id === chatId)) { chats.push({ id: chatId, participants: [currentUser.id, currentListing.sellerId], participantNames: { [currentUser.id]: currentUser.firstName, [currentListing.sellerId]: currentListing.sellerName } }); DB.set('chats', chats); } currentChat = { id: chatId }; showPage('chat'); }
+
+        // ==================== CHATBOT ====================
+        function toggleChatbot() { const win = document.getElementById('chatbot-window'); win.classList.toggle('active'); }
+        function sendBotMessage() { const input = document.getElementById('chatbot-input'); const text = input.value.trim(); if(!text) return; const container = document.getElementById('chatbot-messages'); container.innerHTML += `<div class="flex justify-end"><div class="chat-message-user">${text}</div></div>`; input.value = ''; setTimeout(() => { let response = "I'm not sure about that. Try asking about 'plastic', 'metal', or 'how to sell'."; const lower = text.toLowerCase(); if(lower.includes('plastic')) response = "We have 50+ listings for Plastic. Prices range from $100-$500 per ton."; else if(lower.includes('metal')) response = "Copper and Aluminum are hot right now! Check the marketplace for details."; else if(lower.includes('sell')) response = "To sell, just login and click 'Add Listing' in the marketplace."; else if(lower.includes('hello')) response = "Hello! 👋 I'm RecyBot. How can I help you today?"; container.innerHTML += `<div class="flex justify-start"><div class="chat-message-bot">${response}</div></div>`; container.scrollTop = container.scrollHeight; }, 600); }
+
+        // ==================== MODALS ====================
+        function openModal(id) { const overlay = document.getElementById('modalOverlay'); overlay.innerHTML = document.getElementById(id).outerHTML; overlay.classList.add('active'); if(id === 'addListingModal') { setTimeout(() => { if(!window.pickerMap) { window.pickerMap = L.map('locationPickerMap').setView([25.0, 55.0], 4); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.pickerMap); window.pickerMap.on('click', e => { document.getElementById('listingLat').value = e.latlng.lat; document.getElementById('listingLng').value = e.latlng.lng; if(window.pickerMarker) window.pickerMap.removeLayer(window.pickerMarker); window.pickerMarker = L.marker(e.latlng).addTo(window.pickerMap); }); } else { window.pickerMap.invalidateSize(); } }, 100); } }
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+        function addListing(e) { e.preventDefault(); if(!currentUser) { showToast('Login first'); return; } const form = e.target; const listings = DB.get('listings') || []; listings.unshift({ id: Date.now(), title: form.title.value, category: form.category.value, quantity: Number(form.quantity.value), price: Number(form.price.value), location: form.location.value, lat: parseFloat(document.getElementById('listingLat').value) || 25.0, lng: parseFloat(document.getElementById('listingLng').value) || 55.0, description: 'No description.', sellerId: currentUser.id, sellerName: currentUser.firstName, createdAt: Date.now(), views: 0 }); DB.set('listings', listings); closeModal(); showPage('marketplace'); showToast('Listing Added'); }
+        function makeOffer(e) { e.preventDefault(); closeModal(); showToast('Offer Sent!'); contactSeller(); }
+
+        // ==================== PROFILE ====================
+        function renderProfile() { if(!currentUser) return; document.getElementById('profileAvatar').textContent = currentUser.firstName[0]; document.getElementById('profileName').textContent = currentUser.firstName; document.getElementById('profileEmail').textContent = currentUser.email; const listings = DB.get('listings') || []; document.getElementById('profileListings').textContent = listings.filter(l => l.sellerId === currentUser.id).length; }
+
+        // ==================== ADMIN ====================
+        function updateStats() { const users = DB.get('users') || []; const listings = DB.get('listings') || []; const trans = DB.get('transactions') || []; document.getElementById('statUsers').textContent = users.length; document.getElementById('statListings').textContent = listings.length; document.getElementById('statTrans').textContent = trans.length; const revenue = trans.reduce((sum, t) => sum + (t.amount || 0), 0); document.getElementById('statRevenue').textContent = '$' + revenue; }
+        function initCharts() { const ctx1 = document.getElementById('growthChart')?.getContext('2d'); if(ctx1) { new Chart(ctx1, { type: 'line', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], datasets: [{ label: 'Users', data: [12, 19, 30, 45, 50], borderColor: '#22c55e', tension: 0.4, fill: true, backgroundColor: 'rgba(34, 197, 94, 0.1)' }] }, options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#666' } }, x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#666' } } } } }); } const ctx2 = document.getElementById('categoryChart')?.getContext('2d'); if(ctx2) { new Chart(ctx2, { type: 'doughnut', data: { labels: ['Plastic', 'Metal', 'Paper'], datasets: [{ data: [40, 30, 30], backgroundColor: ['#22c55e', '#0ea5e9', '#f59e0b'], borderColor: '#050505', borderWidth: 4 }] }, options: { plugins: { legend: { position: 'bottom', labels: { color: '#888' } } } } }); } }
+
+        // ==================== UTILS ====================
+        function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
+    </script>
+</body>
+</html>
