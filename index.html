@@ -3,67 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="RecyConnect - Premium marketplace connecting recyclers globally. Turn waste into wealth with our circular economy platform.">
-    <meta name="keywords" content="recycling, marketplace, circular economy, waste management, sustainable materials">
-    <meta name="author" content="RecyConnect Team">
-    <meta property="og:title" content="RecyConnect - Turn Waste Into Wealth">
-    <meta property="og:description" content="Premium marketplace connecting recyclers globally">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="./assets/images/og-image.jpg">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="RecyConnect - Turn Waste Into Wealth">
-    <meta name="twitter:description" content="Premium marketplace connecting recyclers globally">
-    <title>RecyConnect - Turn Waste Into Wealth</title>
+    <title>RecyConnect</title>
     
-    <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://unpkg.com">
-    
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="./css/styles.css">
-    
-    <!-- Tailwind Configuration -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { 
-                        sans: ['Inter', 'sans-serif'], 
-                        display: ['Space Grotesk', 'sans-serif'] 
-                    },
-                    colors: { 
-                        brand: { 500: '#22c55e', 600: '#16a34a' } 
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: { brand: { 500: '#22c55e', 600: '#16a34a' } }
                 }
             }
         }
     </script>
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="./assets/images/favicon.ico">
-    <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png">
+    <style>
+        :root { 
+            --brand: #22c55e; 
+            --sidebar-width: 72px;
+            --bg-primary: #000000;
+            --bg-secondary: #050505;
+            --bg-tertiary: #0a0a0a;
+            --bg-card: rgba(10, 10, 10, 0.7);
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-muted: #737373;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --input-bg: rgba(255,255,255,0.04);
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #f8faf8;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f0f4f0;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --text-primary: #0a0a0a;
+            --text-secondary: #525252;
+            --text-muted: #a3a3a3;
+            --border-color: rgba(0, 0, 0, 0.06);
+            --input-bg: rgba(0, 0, 0, 0.03);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+        
+        [data-theme="light"] .text-white { color: #000 !important; }
+        [data-theme="light"] .text-gray-400 { color: #6b7280 !important; }
+        [data-theme="light"] .bg-black { background-color: #fff !important; }
+        [data-theme="light"] .bg-dark-700 { background-color: #f0f0f0 !important; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes move-grid { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+        @keyframes orbit { 0% { transform: rotate(var(--start-angle, 0deg)) translateX(var(--radius, 200px)) rotate(calc(-1 * var(--start-angle, 0deg))); } 100% { transform: rotate(calc(var(--start-angle, 0deg) + 360deg)) translateX(var(--radius, 200px)) rotate(calc(-1 * (var(--start-angle, 0deg) + 360deg))); } }
+        @keyframes checkPop { 0% { transform: scale(0) rotate(-45deg); } 50% { transform: scale(1.2) rotate(0deg); } 100% { transform: scale(1) rotate(0deg); } }
+        @keyframes modalSlide { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        @keyframes rippleWave {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; border-width: 2px; }
+            100% { transform: translate(-50%, -50%) scale(4); opacity: 0; border-width: 0px; }
+        }
+        @keyframes floatElement {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-15px) rotate(2deg); }
+            50% { transform: translateY(-5px) rotate(-1deg); }
+            75% { transform: translateY(-20px) rotate(1deg); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes pulse-dot { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
+        @keyframes slideInRight { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 0.4; } 100% { transform: scale(1); opacity: 0.8; } }
+        @keyframes moveLine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+        @keyframes rotateShape {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.15; } }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        .bg-dynamic { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: radial-gradient(circle at 50% 0%, var(--bg-tertiary) 0%, var(--bg-primary) 70%); }
+        .grid-mesh { position: absolute; bottom: -50%; left: -50%; width: 200%; height: 200%; background-image: linear-gradient(rgba(34, 197, 94, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.08) 1px, transparent 1px); background-size: 60px 60px; transform: perspective(500px) rotateX(60deg); animation: move-grid 6s linear infinite; opacity: 0.4; mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%); }
+        .orb { position: absolute; border-radius: 50%; filter: blur(100px); animation: pulse-glow 8s ease-in-out infinite; }
+
+        .floating-shape {
+            position: absolute;
+            animation: floatElement 10s ease-in-out infinite;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+        
+        .moving-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.3), transparent);
+            animation: moveLine 8s linear infinite;
+        }
+
+        .hero-fixed-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed rgba(34, 197, 94, 0.15);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero-wave {
+            position: absolute;
+            top: 50%; left: 50%;
+            border-radius: 50%;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            animation: rippleWave 4s ease-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .glow-orb {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 8px; height: 8px;
+            margin-top: -4px; margin-left: -4px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22c55e, 0 0 20px rgba(34, 197, 94, 0.3);
+            animation: orbit var(--duration, 15s) linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .floating-card {
+            position: absolute;
+            top: 50%; left: 50%;
+            padding: 6px 12px;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #a3a3a3;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: orbit var(--duration, 20s) linear infinite;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* 3D Problem Cards Styles */
+        .problem-section-perspective { perspective: 1000px; }
+        .problem-card-3d {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.15s ease-out;
+            will-change: transform;
+        }
+        .problem-card-inner {
+            background: linear-gradient(135deg, rgba(20,20,20,0.9), rgba(10,10,10,0.7));
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+        /* Shine effect */
+        .problem-card-inner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, transparent 54%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        /* Floating icon container */
+        .icon-3d-container {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, rgba(34,197,94,0.1), transparent);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+            position: relative;
+            transform: translateZ(30px);
+            transition: transform 0.3s ease;
+        }
+        .problem-card-3d:hover .icon-3d-container {
+            transform: translateZ(50px) scale(1.1);
+        }
+
+        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); background: var(--bg-secondary); transition: width 0.3s ease, background 0.3s; }
+        .sidebar:hover { width: 220px; }
+        .sidebar:hover .nav-text { opacity: 1; }
+        .sidebar:hover .logo-text { opacity: 1; }
+        .main-content-area { margin-left: var(--sidebar-width); flex: 1; position: relative; z-index: 1; transition: margin-left 0.3s; }
+        .nav-text { opacity: 0; transition: opacity 0.2s; white-space: nowrap; color: var(--text-secondary); }
+        .logo-text { opacity: 0; transition: opacity 0.3s; }
+
+        .glass-card { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); transition: all 0.3s; }
+        .glass-card:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        
+        .shimmer-text { background: linear-gradient(90deg, var(--text-primary) 0%, #86efac 50%, var(--text-primary) 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite; }
+        
+        .page { display: none; }
+        .page.active { display: block; animation: fadeUp 0.5s ease; }
+        
+        #map { height: 100%; width: 100%; background: var(--bg-primary); }
+        .leaflet-popup-content-wrapper { background: var(--bg-secondary); color: var(--text-primary); border-radius: 12px; }
+        
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 28px; background: var(--text-primary); color: var(--bg-primary); border-radius: 50px; font-size: 14px; z-index: 9999; opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .input-dark { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-primary); transition: all 0.2s; }
+        .input-dark:focus { outline: none; border-color: rgba(34, 197, 94, 0.5); }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 260px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content-area { margin-left: 0; }
+            .nav-text, .logo-text { opacity: 1; }
+        }
+        .nav-item.active { background: rgba(34, 197, 94, 0.1); }
+
+        .orbit-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .orbit-item { position: absolute; top: 50%; left: 50%; margin-top: -70px; margin-left: -70px; animation: orbit var(--duration, 20s) linear infinite; animation-delay: var(--delay, 0s); pointer-events: none; }
+        .orbit-item > div { pointer-events: auto; }
+
+        #splash { position: fixed; inset: 0; z-index: 9999; background: var(--bg-primary); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border-color); border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; }
+
+        #chatbot-btn { position: fixed; bottom: 24px; right: 24px; z-index: 150; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.3s; }
+        #chatbot-btn:hover { transform: scale(1.1); }
+        #chatbot-window { position: fixed; bottom: 96px; right: 24px; z-index: 149; width: 360px; height: 480px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 20px; display: none; flex-direction: column; overflow: hidden; transform: translateY(20px); opacity: 0; transition: all 0.3s; }
+        #chatbot-window.active { display: flex; transform: translateY(0); opacity: 1; }
+
+        .cat-pill.active { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.4); color: var(--text-primary); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(8px); }
+        .modal-overlay.active { display: flex; }
+        .listing-modal { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 24px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; position: relative; animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .modal-step { display: none; padding: 2rem; }
+        .modal-step.active { display: block; }
+        
+        .progress-step { width: 32px; height: 32px; border-radius: 50%; background: var(--input-bg); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); transition: all 0.3s; position: relative; z-index: 1; }
+        .progress-step.active { background: var(--bg-tertiary); border-color: var(--brand); color: var(--brand); box-shadow: 0 0 15px rgba(34, 197, 94, 0.2); }
+        .progress-step.completed { background: var(--brand); border-color: var(--brand); color: #000; }
+        .progress-line { height: 2px; background: var(--border-color); flex: 1; margin: 0 -4px; position: relative; top: 0; }
+        .progress-line.active { background: linear-gradient(90deg, var(--brand), var(--border-color)); }
+
+        .category-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .category-card:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        .category-card.selected { border-color: var(--brand); background: rgba(34, 197, 94, 0.1); box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1); }
+        
+        .form-input { width: 100%; padding: 14px 16px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--brand); background: rgba(34, 197, 94, 0.05); }
+        .form-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; color: var(--text-secondary); }
+        
+        .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+        .btn-secondary:hover { background: var(--input-bg); }
+
+        .modal-map-container { height: 180px; border-radius: 16px; overflow: hidden; margin-top: 8px; border: 1px solid var(--border-color); position: relative; }
+        .modal-map-container #modalMap { height: 100%; width: 100%; z-index: 1; }
+        .location-btn { position: absolute; top: 10px; right: 10px; z-index: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; color: var(--text-primary); font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .location-btn:hover { background: var(--brand); color: #000; border-color: var(--brand); }
+
+        .chat-bubble-user { background: linear-gradient(135deg, #22c55e, #16a34a); color: #000; border-radius: 16px 16px 4px 16px; }
+        .chat-bubble-bot { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 16px 16px 16px 4px; }
+
+        .live-badge .dot { animation: pulse-dot 1.5s ease-in-out infinite; }
+        .notification-dropdown { position: absolute; top: 100%; right: 0; width: 280px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; margin-top: 8px; opacity: 0; visibility: hidden; transition: all 0.2s; z-index: 50; }
+        .notification-dropdown.active { opacity: 1; visibility: visible; }
+        .theme-icon { transition: transform 0.3s, stroke 0.3s; }
+        [data-theme="light"] .theme-icon { transform: rotate(180deg); stroke: #f59e0b; }
+    </style>
 </head>
 <body>
 
-    <!-- Splash Screen -->
     <div id="splash">
         <div class="spinner"></div>
         <h1 class="font-display text-white text-2xl tracking-widest mt-6 opacity-80">RECYCONNECT</h1>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
     
-    <!-- Chatbot Window -->
     <div id="chatbot-window">
         <div class="p-4 border-b border-white/10 flex items-center justify-between">
             <span class="font-semibold text-sm">RecyBot</span>
@@ -76,49 +318,35 @@
         </div>
     </div>
 
-    <!-- Chatbot Button -->
     <div id="chatbot-btn" onclick="toggleChatbot()">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-        </svg>
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
     </div>
 
     <div class="app-layout">
-        <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="flex flex-col items-center py-6 w-full">
                 <a href="#" onclick="showPage('landing')" class="flex items-center gap-3 mb-12 w-full px-4 justify-center">
                     <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/30 flex-shrink-0">
-                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                        </svg>
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                     </div>
                     <span class="logo-text font-display font-bold text-lg">RecyConnect</span>
                 </a>
 
                 <nav class="flex flex-col gap-2 w-full px-3 flex-1">
                     <a href="#" onclick="showPage('landing')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 group" id="nav-landing">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3"/>
-                        </svg>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3"/></svg>
                         <span class="nav-text text-sm font-medium">Home</span>
                     </a>
                     <a href="#" onclick="showPage('marketplace')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 group" id="nav-marketplace">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                        </svg>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                         <span class="nav-text text-sm font-medium">Market</span>
                     </a>
                     <a href="#" onclick="showPage('map')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 group" id="nav-map">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                        </svg>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
                         <span class="nav-text text-sm font-medium">Map</span>
                     </a>
                     <a href="#" onclick="showPage('chat')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 group" id="nav-chat">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                         <span class="nav-text text-sm font-medium">Chat</span>
                     </a>
                 </nav>
@@ -126,9 +354,7 @@
                 <div class="w-full px-3 mt-auto border-t pt-4" style="border-color: var(--border-color);">
                     <button onclick="toggleTheme()" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 w-full group">
                         <div class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0 flex justify-center">
-                            <svg class="w-5 h-5 theme-icon" id="themeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                            </svg>
+                            <svg class="w-5 h-5 theme-icon" id="themeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                         </div>
                         <span class="nav-text text-sm font-medium">Theme</span>
                     </button>
@@ -143,9 +369,7 @@
                     <div class="relative">
                         <button onclick="toggleNotifications()" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5 w-full group">
                             <div class="w-5 h-5 text-gray-400 group-hover:text-white flex-shrink-0 flex justify-center">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                                </svg>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                             </div>
                             <span class="nav-text text-sm font-medium">Alerts</span>
                         </button>
@@ -156,9 +380,7 @@
 
                     <div id="authBtns">
                         <a href="#" onclick="showPage('login')" class="nav-item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-white/5">
-                            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
+                            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             <span class="nav-text text-sm font-medium">Login</span>
                         </a>
                     </div>
@@ -169,9 +391,7 @@
                             <span class="nav-text text-sm font-medium truncate" id="userNameNav">User</span>
                         </a>
                         <button onclick="logout()" class="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-red-500/10 w-full text-red-400">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             <span class="nav-text text-sm font-medium">Logout</span>
                         </button>
                     </div>
@@ -179,24 +399,19 @@
             </div>
         </aside>
 
-        <!-- Mobile Overlay -->
         <div id="mobileOverlay" class="fixed inset:0 bg-black/60 z-50 hidden md:hidden" onclick="toggleMobileSidebar()"></div>
 
-        <!-- Main Content Area -->
         <main class="main-content-area">
             
-            <!-- Mobile Header -->
             <div class="md:hidden fixed top-0 left-0 right-0 h-16 glass-card z-40 flex items-center px-4 justify-between">
                 <button onclick="toggleMobileSidebar()" class="p-2">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
-                    </svg>
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
                 </button>
                 <span class="font-display font-bold text-white">RecyConnect</span>
                 <div class="w-10"></div>
             </div>
 
-            <!-- LANDING PAGE -->
+            <!-- LANDING -->
             <div id="page-landing" class="page active pt-20 md:pt-0">
                 <div class="bg-dynamic">
                     <div class="grid-mesh"></div>
@@ -210,29 +425,19 @@
                     
                     <!-- Floating Shapes -->
                     <div class="floating-shape" style="top: 15%; left: 10%; animation-delay: 0s;">
-                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                            <rect x="5" y="5" width="30" height="30" stroke="#22c55e" stroke-width="1" fill="none" rx="4"/>
-                        </svg>
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="5" y="5" width="30" height="30" stroke="#22c55e" stroke-width="1" fill="none" rx="4"/></svg>
                     </div>
                     <div class="floating-shape" style="top: 60%; left: 5%; animation-delay: 2s;">
-                        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                            <circle cx="15" cy="15" r="12" stroke="#22c55e" stroke-width="1" fill="none"/>
-                        </svg>
+                        <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12" stroke="#22c55e" stroke-width="1" fill="none"/></svg>
                     </div>
                     <div class="floating-shape" style="top: 80%; left: 20%; animation-delay: 4s;">
-                        <svg width="35" height="35" viewBox="0 0 35 35" fill="none">
-                            <polygon points="17.5,2 32,27 3,27" stroke="#22c55e" stroke-width="1" fill="none"/>
-                        </svg>
+                        <svg width="35" height="35" viewBox="0 0 35 35" fill="none"><polygon points="17.5,2 32,27 3,27" stroke="#22c55e" stroke-width="1" fill="none"/></svg>
                     </div>
                     <div class="floating-shape" style="top: 30%; left: 85%; animation-delay: 1s;">
-                        <svg width="45" height="45" viewBox="0 0 45 45" fill="none">
-                            <path d="M22.5 2L43 22.5L22.5 43L2 22.5Z" stroke="#22c55e" stroke-width="1" fill="none"/>
-                        </svg>
+                        <svg width="45" height="45" viewBox="0 0 45 45" fill="none"><path d="M22.5 2L43 22.5L22.5 43L2 22.5Z" stroke="#22c55e" stroke-width="1" fill="none"/></svg>
                     </div>
                      <div class="floating-shape" style="top: 10%; left: 70%; animation-delay: 5s;">
-                        <svg width="25" height="25" viewBox="0 0 25 25" fill="none">
-                            <rect x="2" y="2" width="21" height="21" stroke="#fff" stroke-width="0.5" fill="none" transform="rotate(45 12.5 12.5)"/>
-                        </svg>
+                        <svg width="25" height="25" viewBox="0 0 25 25" fill="none"><rect x="2" y="2" width="21" height="21" stroke="#fff" stroke-width="0.5" fill="none" transform="rotate(45 12.5 12.5)"/></svg>
                     </div>
                 </div>
 
@@ -256,7 +461,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Hero Animation -->
+                            <!-- Orbit with Ripples and Glowing Balls -->
                             <div class="reveal hidden lg:flex items-center justify-center h-[500px] relative">
                                 <div class="orbit-container">
                                     
@@ -267,7 +472,7 @@
                                     <div class="hero-fixed-ring" style="width: 380px; height: 380px;"></div>
                                     <div class="hero-fixed-ring" style="width: 450px; height: 450px;"></div>
                                     
-                                    <!-- Waves -->
+                                    <!-- MASSIVE WAVES -->
                                     <div class="hero-wave" style="animation-delay: 0s; width: 80px; height: 80px; animation-duration: 3s;"></div>
                                     <div class="hero-wave" style="animation-delay: 0.5s; width: 120px; height: 120px; animation-duration: 3.5s;"></div>
                                     <div class="hero-wave" style="animation-delay: 1s; width: 160px; height: 160px; animation-duration: 4s;"></div>
@@ -283,9 +488,7 @@
                                     <div class="orbit-center z-10">
                                         <div class="w-24 h-24 rounded-full bg-gradient-to-br from-brand-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-brand-500/40 relative" style="box-shadow: 0 0 60px rgba(34, 197, 94, 0.5);">
                                             <div class="absolute inset-0 rounded-full pulseRing border-2 border-brand-400/30"></div>
-                                            <svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                            </svg>
+                                            <svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                                         </div>
                                     </div>
                                     
@@ -297,7 +500,7 @@
                                     <div class="floating-card" style="--radius: 295px; --duration: 26s; --start-angle: 240deg;">E-Waste</div>
                                     <div class="floating-card" style="--radius: 250px; --duration: 23s; --start-angle: 300deg;">Paper & Cardboard</div>
 
-                                    <!-- Glowing Orbs -->
+                                    <!-- MANY Glowing Orbs -->
                                     <div class="glow-orb" style="--delay: 0s; --radius: 50px; --duration: 8s; --start-angle: 0deg;"></div>
                                     <div class="glow-orb" style="--delay: -1s; --radius: 80px; --duration: 10s; --start-angle: 30deg;"></div>
                                     <div class="glow-orb" style="--delay: -2s; --radius: 110px; --duration: 12s; --start-angle: 60deg;"></div>
@@ -334,36 +537,28 @@
                             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div class="reveal glass-card p-6 hover:border-brand-500/30 group cursor-pointer">
                                     <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mb-4 text-brand-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                                        </svg>
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
                                     </div>
                                     <h3 class="font-bold text-white mb-1">Geo-Located</h3>
                                     <p class="text-xs" style="color: var(--text-muted);">Find materials near you instantly</p>
                                 </div>
                                 <div class="reveal glass-card p-6 hover:border-blue-500/30 group cursor-pointer">
                                     <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                        </svg>
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                     </div>
                                     <h3 class="font-bold text-white mb-1">Secure Chat</h3>
                                     <p class="text-xs" style="color: var(--text-muted);">Encrypted negotiations</p>
                                 </div>
                                 <div class="reveal glass-card p-6 hover:border-amber-500/30 group cursor-pointer">
                                     <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     </div>
                                     <h3 class="font-bold text-white mb-1">Smart Offers</h3>
                                     <p class="text-xs" style="color: var(--text-muted);">Transparent pricing</p>
                                 </div>
                                 <div class="reveal glass-card p-6 hover:border-teal-500/30 group cursor-pointer">
                                     <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mb-4 text-teal-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                        </svg>
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                     </div>
                                     <h3 class="font-bold text-white mb-1">Fast Trading</h3>
                                     <p class="text-xs" style="color: var(--text-muted);">Instant connections</p>
@@ -371,7 +566,7 @@
                             </div>
                         </div>
 
-                        <!-- The Problem We Solve Section -->
+                        <!-- The Problem We Solve Section (3D Cards) -->
                         <div class="py-24 border-t relative overflow-hidden" style="border-color: var(--border-color);">
                             <div class="text-center mb-16">
                                 <span class="reveal text-xs font-bold tracking-widest text-brand-400 uppercase mb-3 block">Why We Exist</span>
@@ -384,9 +579,7 @@
                                 <div class="problem-card-3d reveal" onmousemove="handle3DTilt(event, this)" onmouseleave="reset3DTilt(this)">
                                     <div class="problem-card-inner p-8 h-full flex flex-col">
                                         <div class="icon-3d-container">
-                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.656a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/>
-                                            </svg>
+                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.656a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/></svg>
                                         </div>
                                         <h3 class="font-bold text-xl text-white mb-3 transform transition-transform duration-300" style="transform: translateZ(20px);">Disconnected Market</h3>
                                         <p class="text-sm leading-relaxed" style="color: var(--text-muted); transform: translateZ(10px);">Sellers and buyers struggle to connect efficiently, leading to missed opportunities and stagnant inventory.</p>
@@ -397,9 +590,7 @@
                                 <div class="problem-card-3d reveal" style="transition-delay: 0.1s;" onmousemove="handle3DTilt(event, this)" onmouseleave="reset3DTilt(this)">
                                     <div class="problem-card-inner p-8 h-full flex flex-col">
                                         <div class="icon-3d-container">
-                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
+                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         </div>
                                         <h3 class="font-bold text-xl text-white mb-3 transform transition-transform duration-300" style="transform: translateZ(20px);">Value Loss</h3>
                                         <p class="text-sm leading-relaxed" style="color: var(--text-muted); transform: translateZ(10px);">Billions of dollars in economic value are lost annually as reusable materials end up in landfills instead of being recycled.</p>
@@ -410,9 +601,7 @@
                                 <div class="problem-card-3d reveal" style="transition-delay: 0.2s;" onmousemove="handle3DTilt(event, this)" onmouseleave="reset3DTilt(this)">
                                     <div class="problem-card-inner p-8 h-full flex flex-col">
                                         <div class="icon-3d-container">
-                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-2.332 9-7.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                            </svg>
+                                            <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-2.332 9-7.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                         </div>
                                         <h3 class="font-bold text-xl text-white mb-3 transform transition-transform duration-300" style="transform: translateZ(20px);">Trust Deficit</h3>
                                         <p class="text-sm leading-relaxed" style="color: var(--text-muted); transform: translateZ(10px);">No secure channels for transactions creates uncertainty and risk, preventing safe and reliable trade.</p>
@@ -420,12 +609,11 @@
                                 </div>
                             </div>
                             
-                            <!-- Background Elements -->
+                            <!-- Background Elements for this section -->
                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-brand-500/5 opacity-20 pointer-events-none"></div>
                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-brand-500/5 opacity-10 pointer-events-none"></div>
                         </div>
 
-                        <!-- Trending Materials -->
                         <div class="py-16 border-t" style="border-color: var(--border-color);">
                             <div class="flex justify-between items-center mb-8">
                                 <h2 class="reveal font-display text-2xl font-bold text-white">Trending Materials</h2>
@@ -437,7 +625,7 @@
                 </section>
             </div>
 
-            <!-- MARKETPLACE PAGE -->
+            <!-- MARKETPLACE -->
             <div id="page-marketplace" class="page pt-20 md:pt-8">
                 <div class="max-w-7xl mx-auto p-6">
                     <div class="flex justify-between items-center mb-6">
@@ -459,7 +647,7 @@
                 </div>
             </div>
 
-            <!-- MAP PAGE -->
+            <!-- MAP -->
             <div id="page-map" class="page">
                 <div class="pt-16 md:pt-0 h-screen flex flex-col relative">
                     <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
@@ -470,7 +658,7 @@
                 </div>
             </div>
 
-            <!-- LISTING DETAIL PAGE -->
+            <!-- LISTING DETAIL -->
             <div id="page-listing" class="page pt-20 md:pt-8">
                 <div class="max-w-4xl mx-auto p-6">
                     <div class="glass-card rounded-3xl overflow-hidden">
@@ -503,7 +691,7 @@
                 </div>
             </div>
 
-            <!-- CHAT PAGE -->
+            <!-- CHAT -->
             <div id="page-chat" class="page">
                 <div class="pt-16 md:pt-0 h-screen flex flex-col md:flex-row">
                     <div class="w-full md:w-80 border-r flex flex-col" style="background: var(--bg-secondary); border-color: var(--border-color);">
@@ -524,7 +712,7 @@
                 </div>
             </div>
 
-            <!-- PROFILE PAGE -->
+            <!-- PROFILE -->
             <div id="page-profile" class="page pt-20 md:pt-8">
                 <div class="max-w-4xl mx-auto p-6">
                     <div class="glass-card rounded-3xl p-8 text-center">
@@ -536,7 +724,7 @@
                 </div>
             </div>
 
-            <!-- LOGIN PAGE -->
+            <!-- LOGIN -->
             <div id="page-login" class="page">
                 <div class="min-h-screen flex items-center justify-center p-4 pt-28">
                     <div class="w-full max-w-md">
@@ -553,7 +741,7 @@
                 </div>
             </div>
 
-            <!-- REGISTER PAGE -->
+            <!-- REGISTER -->
             <div id="page-register" class="page">
                 <div class="min-h-screen flex items-center justify-center p-4 pt-28">
                     <div class="w-full max-w-md">
@@ -572,10 +760,8 @@
         </main>
     </div>
 
-    <!-- Modal Overlay -->
     <div id="modalOverlay" class="modal-overlay" onclick="closeModal()"></div>
 
-    <!-- Add Listing Modal Template -->
     <template id="addListingModalTemplate">
         <div class="listing-modal" onclick="event.stopPropagation()">
             <div class="p-6 pb-2 flex items-center justify-between">
@@ -584,9 +770,7 @@
                     <p class="text-xs mt-1" style="color: var(--text-muted);">Step <span id="currentStepNum">1</span> of 3</p>
                 </div>
                 <button onclick="closeModal()" class="p-1 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
             
@@ -643,9 +827,7 @@
                         <div class="modal-map-container">
                             <div id="modalMap"></div>
                             <button onclick="locateMe()" class="location-btn">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                </svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                                 My Location
                             </button>
                         </div>
@@ -677,9 +859,7 @@
             <div class="modal-step" id="modalSuccess">
                 <div class="text-center py-6">
                     <div class="w-16 h-16 mx-auto rounded-full bg-brand-500 flex items-center justify-center mb-4 shadow-lg shadow-brand-500/30">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                        </svg>
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     </div>
                     <h2 class="font-bold text-lg mb-1" style="color: var(--text-primary);">Success!</h2>
                     <p class="text-xs mb-6" style="color: var(--text-muted);">Your listing is now live.</p>
@@ -689,11 +869,525 @@
         </div>
     </template>
 
-    <!-- External Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="./js/app.js"></script>
-    
-    <!-- Build Timestamp -->
-    <!-- build timestamp: 2026-03-31T21:43:00Z -->
+    <script>
+        // ==================== SPLASH ====================
+        window.onload = function() {
+            setTimeout(function() {
+                var s = document.getElementById('splash');
+                s.style.opacity = '0';
+                setTimeout(function() { s.style.display = 'none'; }, 500);
+            }, 1000);
+        };
+
+        // ==================== LIVE USERS ====================
+        setInterval(function() {
+            var el = document.getElementById('liveUsers');
+            if(el) el.textContent = 100 + Math.floor(Math.random() * 50);
+        }, 3000);
+
+        // ==================== DATABASE ====================
+        var DB = {
+            get: function(k) { 
+                try { return JSON.parse(localStorage.getItem('rc_' + k)); } catch(e) { return null; } 
+            },
+            set: function(k, v) { localStorage.setItem('rc_' + k, JSON.stringify(v)); }
+        };
+        
+        var currentUser = DB.get('currentUser');
+        var currentListing = null;
+        var currentChat = null;
+        var map = null;
+        var markers = [];
+        var currentCategory = '';
+        var selectedCategory = '';
+        var currentStep = 1;
+        var modalMap = null;
+        var modalMarker = null;
+
+        // ==================== THEME ====================
+        function toggleTheme() {
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme');
+            var next = current === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            showToast(next === 'light' ? 'Light mode' : 'Dark mode');
+        }
+        
+        function loadTheme() {
+            var saved = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+        }
+
+        // ==================== NOTIFICATIONS ====================
+        function toggleNotifications() {
+            var d = document.getElementById('notifDropdown');
+            if(d) d.classList.toggle('active');
+        }
+
+        // ==================== INIT ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            initDB();
+            checkAuth();
+            var obs = new IntersectionObserver(function(entries) {
+                entries.forEach(function(e) { if(e.isIntersecting) e.target.classList.add('active'); });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+        });
+
+        function initDB() {
+            if(!DB.get('init')) {
+                DB.set('listings', [
+                    { id: 1, title: 'HDPE Plastic Scrap', category: 'Plastic', quantity: 500, price: 250, location: 'Dubai', lat: 25.20, lng: 55.27, description: 'Clean industrial plastic.', sellerId: 'u1', sellerName: 'Ahmed', createdAt: Date.now(), views: 12 },
+                    { id: 2, title: 'Copper Wire', category: 'Metal', quantity: 120, price: 1200, location: 'Abu Dhabi', lat: 24.45, lng: 54.37, description: 'High purity copper.', sellerId: 'u2', sellerName: 'Sara', createdAt: Date.now()-80000, views: 45 }
+                ]);
+                DB.set('users', [
+                    { id: 'u1', firstName: 'Ahmed', email: 'ahmed@demo.com', password: 'demo123' },
+                    { id: 'u2', firstName: 'Sara', email: 'sara@demo.com', password: 'demo123' }
+                ]);
+                DB.set('chats', []);
+                DB.set('messages', []);
+                DB.set('init', true);
+            }
+        }
+
+        function checkAuth() { 
+            currentUser = DB.get('currentUser'); 
+            updateUI(); 
+        }
+        
+        function updateUI() {
+            var auth = document.getElementById('authBtns');
+            var user = document.getElementById('userMenu');
+            if(currentUser) {
+                auth.classList.add('hidden');
+                user.classList.remove('hidden');
+                document.getElementById('userAvatarNav').textContent = currentUser.firstName[0];
+                document.getElementById('userNameNav').textContent = currentUser.firstName;
+            } else {
+                auth.classList.remove('hidden');
+                user.classList.add('hidden');
+            }
+        }
+
+        // ==================== AUTH ====================
+        function handleLogin(e) {
+            e.preventDefault();
+            var email = e.target.email.value;
+            var pass = e.target.password.value;
+            var users = DB.get('users') || [];
+            var found = users.find(function(u) { return u.email === email && u.password === pass; });
+            if(found) {
+                currentUser = found;
+                DB.set('currentUser', found);
+                updateUI();
+                showPage('marketplace');
+                showToast('Welcome back!');
+            } else {
+                showToast('Invalid credentials');
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            var email = e.target.email.value;
+            var pass = e.target.password.value;
+            var users = DB.get('users') || [];
+            if(users.find(function(u) { return u.email === email; })) return showToast('Email exists');
+            var newUser = { id: 'u_'+Date.now(), firstName: email.split('@')[0], email: email, password: pass };
+            users.push(newUser);
+            DB.set('users', users);
+            currentUser = newUser;
+            DB.set('currentUser', newUser);
+            updateUI();
+            showPage('marketplace');
+            showToast('Account created');
+        }
+
+        function logout() {
+            localStorage.removeItem('rc_currentUser');
+            currentUser = null;
+            updateUI();
+            showPage('landing');
+            showToast('Logged out');
+        }
+
+        // ==================== NAV ====================
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+            document.getElementById('page-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+            var nav = document.getElementById('nav-' + id);
+            if(nav) nav.classList.add('active');
+            window.scrollTo(0, 0);
+            if(id === 'marketplace') renderMarketplace();
+            if(id === 'map') setTimeout(initMap, 100);
+            if(id === 'chat') renderChat();
+            if(id === 'profile') renderProfile();
+            if(id === 'landing') renderTrending();
+        }
+
+        function toggleMobileSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('mobileOverlay').classList.toggle('hidden');
+        }
+
+        function toggleLang() {
+            var lang = document.documentElement.getAttribute('lang') === 'ar' ? 'en' : 'ar';
+            document.documentElement.setAttribute('lang', lang);
+            document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            document.getElementById('langLabel').textContent = lang.toUpperCase();
+        }
+
+        // ==================== MARKETPLACE ====================
+        function renderMarketplace() {
+            document.getElementById('listingGrid').innerHTML = '<div class="glass-card h-40 animate-pulse"></div><div class="glass-card h-40 animate-pulse"></div>';
+            setTimeout(function() { renderGrid(DB.get('listings') || []); }, 200);
+        }
+
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-pill').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.cat === cat);
+            });
+            filterListings();
+        }
+
+        function filterListings() {
+            var listings = DB.get('listings') || [];
+            var search = document.getElementById('searchInput').value.toLowerCase();
+            if(search) listings = listings.filter(function(l) { return l.title.toLowerCase().indexOf(search) > -1; });
+            if(currentCategory) listings = listings.filter(function(l) { return l.category === currentCategory; });
+            renderGrid(listings);
+        }
+
+        function renderGrid(listings) {
+            var grid = document.getElementById('listingGrid');
+            var empty = document.getElementById('emptyState');
+            if(listings.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+            grid.innerHTML = listings.map(function(l) {
+                return '<div class="glass-card overflow-hidden cursor-pointer" onclick="viewListing(' + l.id + ')">' +
+                    '<div class="h-24 relative p-3" style="background: var(--bg-tertiary);">' +
+                    '<span class="px-2 py-1 rounded bg-brand-500/20 text-brand-400 text-[10px] font-bold">' + l.category + '</span></div>' +
+                    '<div class="p-4"><h3 class="font-bold text-sm truncate" style="color: var(--text-primary);">' + l.title + '</h3>' +
+                    '<p class="text-[10px]" style="color: var(--text-muted);">' + l.quantity + ' kg</p>' +
+                    '<div class="flex justify-between mt-2">' +
+                    '<span class="font-bold text-brand-400">$' + l.price + '</span>' +
+                    '<span class="text-[9px]" style="color: var(--text-muted);">' + l.location + '</span></div></div></div>';
+            }).join('');
+        }
+
+        function viewListing(id) {
+            var l = (DB.get('listings') || []).find(function(x) { return x.id === id; });
+            if(!l) return;
+            currentListing = l;
+            l.views++;
+            DB.set('listings', DB.get('listings'));
+            document.getElementById('detailTitle').textContent = l.title;
+            document.getElementById('detailPrice').textContent = '$' + l.price;
+            document.getElementById('detailQuantity').textContent = 'per ' + l.quantity + ' kg';
+            document.getElementById('detailLocation').textContent = l.location;
+            document.getElementById('detailDescription').textContent = l.description;
+            document.getElementById('detailCategoryBadge').textContent = l.category;
+            document.getElementById('detailSellerName').textContent = l.sellerName;
+            document.getElementById('detailSellerAvatar').textContent = l.sellerName[0];
+            var isOwner = currentUser && currentUser.id === l.sellerId;
+            document.getElementById('buyerActions').classList.toggle('hidden', isOwner);
+            document.getElementById('ownerActions').classList.toggle('hidden', !isOwner);
+            showPage('listing');
+        }
+
+        function deleteListing() {
+            if(!confirm('Delete?')) return;
+            var listings = DB.get('listings') || [];
+            listings = listings.filter(function(x) { return x.id !== currentListing.id; });
+            DB.set('listings', listings);
+            showPage('marketplace');
+            showToast('Deleted');
+        }
+
+        // ==================== TRENDING ====================
+        function renderTrending() {
+            var listings = DB.get('listings') || [];
+            var grid = document.getElementById('trendingGrid');
+            if(!grid) return;
+            grid.innerHTML = listings.slice(0, 4).map(function(l) {
+                return '<div class="glass-card p-4 cursor-pointer" onclick="viewListing(' + l.id + ')">' +
+                    '<span class="text-[9px] text-brand-400 font-bold uppercase">' + l.category + '</span>' +
+                    '<h3 class="font-bold mt-1 text-sm" style="color: var(--text-primary);">' + l.title + '</h3>' +
+                    '<p class="text-[10px]" style="color: var(--text-muted);">' + l.location + '</p>' +
+                    '<div class="mt-3 flex justify-between"><span class="font-bold" style="color: var(--text-primary);">$' + l.price + '</span></div></div>';
+            }).join('') || '<p class="col-span-4 text-center" style="color: var(--text-muted);">No listings</p>';
+        }
+
+        // ==================== MAP ====================
+        function initMap() {
+            if(map) map.remove();
+            map = L.map('map', { zoomControl: true }).setView([25.0, 55.0], 6);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(map);
+            addMarkers();
+        }
+
+        function addMarkers(filter) {
+            if(!filter) filter = '';
+            markers.forEach(function(m) { map.removeLayer(m); });
+            markers = [];
+            var listings = DB.get('listings') || [];
+            if(filter) listings = listings.filter(function(l) { return l.category === filter; });
+            listings.forEach(function(l) {
+                if(!l.lat) return;
+                var icon = L.divIcon({
+                    className: '',
+                    html: '<div style="background:linear-gradient(135deg,#22c55e,#16a34a);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;">' + l.category[0] + '</div>',
+                    iconSize: [24, 24], iconAnchor: [12, 12]
+                });
+                var m = L.marker([l.lat, l.lng], { icon: icon }).addTo(map);
+                m.bindPopup('<b style="color:#22c55e;">' + l.title + '</b><br>$' + l.price);
+                markers.push(m);
+            });
+        }
+
+        function filterMapMarkers(cat) { addMarkers(cat); }
+
+        // ==================== CHAT ====================
+        function renderChat() {
+            if(!currentUser) return;
+            var chats = DB.get('chats') || [];
+            var userChats = chats.filter(function(c) { return c.participants.indexOf(currentUser.id) > -1; });
+            document.getElementById('chatList').innerHTML = userChats.map(function(c) {
+                var otherId = c.participants.find(function(p) { return p !== currentUser.id; });
+                var name = c.participantNames[otherId];
+                return '<div class="p-4 hover:bg-white/5 cursor-pointer border-b flex items-center gap-3" style="border-color: var(--border-color);" onclick="openChat(\'' + c.id + '\')">' + name + '</div>';
+            }).join('') || '<div class="p-6 text-center text-xs" style="color: var(--text-muted);">No conversations</div>';
+        }
+
+        function openChat(id) {
+            currentChat = (DB.get('chats') || []).find(function(c) { return c.id === id; });
+            if(!currentChat) return;
+            var otherId = currentChat.participants.find(function(p) { return p !== currentUser.id; });
+            document.getElementById('chatPartnerName').textContent = currentChat.participantNames[otherId];
+            document.getElementById('chatPartnerAvatar').textContent = currentChat.participantNames[otherId][0];
+            var msgs = (DB.get('messages') || []).filter(function(m) { return m.chatId === id; });
+            document.getElementById('chatMessages').innerHTML = msgs.map(function(m) {
+                return '<div class="flex ' + (m.senderId === currentUser.id ? 'justify-end' : 'justify-start') + '">' +
+                    '<div class="' + (m.senderId === currentUser.id ? 'chat-bubble-user' : 'chat-bubble-bot') + ' px-3 py-2 text-xs">' + m.text + '</div></div>';
+            }).join('');
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+
+        function sendMessage() {
+            if(!currentChat || !currentUser) return;
+            var input = document.getElementById('msgInput');
+            if(!input.value.trim()) return;
+            var msgs = DB.get('messages') || [];
+            msgs.push({ id: Date.now(), chatId: currentChat.id, senderId: currentUser.id, text: input.value, timestamp: Date.now() });
+            DB.set('messages', msgs);
+            
+            var otherId = currentChat.participants.find(function(p) { return p !== currentUser.id; });
+            addNotification('New message received');
+            
+            input.value = '';
+            openChat(currentChat.id);
+        }
+
+        function contactSeller() {
+            if(!currentUser) { showToast('Login first'); showPage('login'); return; }
+            if(!currentListing) return;
+            var chats = DB.get('chats') || [];
+            var chatId = [currentUser.id, currentListing.sellerId].sort().join('_');
+            if(!chats.find(function(c) { return c.id === chatId; })) {
+                var newChat = { id: chatId, participants: [currentUser.id, currentListing.sellerId], participantNames: {} };
+                newChat.participantNames[currentUser.id] = currentUser.firstName;
+                newChat.participantNames[currentListing.sellerId] = currentListing.sellerName;
+                chats.push(newChat);
+                DB.set('chats', chats);
+            }
+            currentChat = { id: chatId };
+            addNotification('Chat started with ' + currentListing.sellerName);
+            showPage('chat');
+        }
+
+        function makeOffer() {
+            if(!currentUser) { showToast('Login first'); showPage('login'); return; }
+            var offer = prompt('Your offer ($):');
+            if(offer) { showToast('Offer sent!'); contactSeller(); }
+        }
+
+        // ==================== CHATBOT ====================
+        function toggleChatbot() { document.getElementById('chatbot-window').classList.toggle('active'); }
+
+        function sendBotMessage() {
+            var input = document.getElementById('chatbot-input');
+            var text = input.value.trim();
+            if(!text) return;
+            var container = document.getElementById('chatbot-messages');
+            container.innerHTML += '<div class="flex justify-end"><div class="chat-bubble-user px-3 py-2 text-xs">' + text + '</div></div>';
+            input.value = '';
+            setTimeout(function() {
+                var r = "I can help with materials.";
+                if(text.toLowerCase().indexOf('plastic') > -1) r = "Plastic: HDPE $320/ton";
+                else if(text.toLowerCase().indexOf('metal') > -1) r = "Copper $8500/ton";
+                container.innerHTML += '<div class="flex justify-start"><div class="chat-bubble-bot px-3 py-2 text-xs">' + r + '</div></div>';
+            }, 300);
+        }
+
+        // ==================== MODAL LOGIC ====================
+        function openAddListingModal() {
+            var overlay = document.getElementById('modalOverlay');
+            var template = document.getElementById('addListingModalTemplate');
+            overlay.innerHTML = template.innerHTML;
+            overlay.classList.add('active');
+            currentStep = 1;
+            selectedCategory = '';
+            setTimeout(function() { updateProgressUI(1); }, 10);
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            document.getElementById('modalOverlay').innerHTML = '';
+            if(modalMap) { modalMap.remove(); modalMap = null; modalMarker = null; }
+        }
+
+        function selectCategory(el, cat) {
+            document.querySelectorAll('.category-card').forEach(function(c) { c.classList.remove('selected'); });
+            el.classList.add('selected');
+            selectedCategory = cat;
+            document.getElementById('step1Next').disabled = false;
+        }
+
+        function goToStep(step) {
+            if(step === 2 && !selectedCategory) { showToast('Select category'); return; }
+            if(step === 3) {
+                var title = document.getElementById('listingTitle').value;
+                var qty = document.getElementById('listingQty').value;
+                var price = document.getElementById('listingPrice').value;
+                if(!title || !qty || !price) { showToast('Fill all fields'); return; }
+                document.getElementById('previewTitle').textContent = title;
+                document.getElementById('previewInfo').textContent = qty + ' kg - $' + price;
+                document.getElementById('previewPrice').textContent = '$' + price;
+            }
+            currentStep = step;
+            updateProgressUI(step);
+            
+            for(var i = 1; i <= 3; i++) document.getElementById('modalStep' + i).classList.remove('active');
+            document.getElementById('modalSuccess').classList.remove('active');
+            if(step === 4) document.getElementById('modalSuccess').classList.add('active');
+            else document.getElementById('modalStep' + step).classList.add('active');
+
+            var numEl = document.getElementById('currentStepNum');
+            if(numEl) numEl.textContent = step;
+            
+            if(step === 2) {
+                setTimeout(initModalMap, 100);
+            }
+        }
+
+        function updateProgressUI(step) {
+            var fill = document.getElementById('progressBarFill');
+            if(fill) {
+                var pct = (step / 3) * 100;
+                fill.style.width = pct + '%';
+            }
+        }
+
+        // ==================== MODAL MAP ====================
+        function initModalMap() {
+            if(modalMap) { modalMap.remove(); }
+            modalMap = L.map('modalMap', { center: [25.0, 55.0], zoom: 4, zoomControl: false });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(modalMap);
+            
+            modalMap.on('click', function(e) {
+                setModalMarker(e.latlng);
+            });
+            
+            setTimeout(function() { if(modalMap) modalMap.invalidateSize(); }, 200);
+        }
+
+        function setModalMarker(latlng) {
+            if(modalMarker) modalMap.removeLayer(modalMarker);
+            var icon = L.divIcon({
+                className: '',
+                html: '<div style="background:#22c55e;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px rgba(34,197,94,0.5);"></div>',
+                iconSize: [20, 20], iconAnchor: [10, 10]
+            });
+            modalMarker = L.marker(latlng, { icon: icon, draggable: true }).addTo(modalMap);
+            document.getElementById('listingLat').value = latlng.lat;
+            document.getElementById('listingLng').value = latlng.lng;
+        }
+
+        function locateMe() {
+            if(!navigator.geolocation) { showToast('Geolocation not supported'); return; }
+            showToast('Locating...');
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                if(modalMap) {
+                    modalMap.setView([lat, lng], 13);
+                    setModalMarker({ lat: lat, lng: lng });
+                }
+            }, function() {
+                showToast('Could not get location');
+            });
+        }
+
+        function submitListing() {
+            if(!currentUser) { showToast('Login first'); closeModal(); showPage('login'); return; }
+            var listings = DB.get('listings') || [];
+            listings.unshift({
+                id: Date.now(),
+                title: document.getElementById('listingTitle').value,
+                category: selectedCategory,
+                quantity: Number(document.getElementById('listingQty').value) || 0,
+                price: Number(document.getElementById('listingPrice').value) || 0,
+                location: document.getElementById('listingLocation').value || 'Unknown',
+                lat: parseFloat(document.getElementById('listingLat').value) || 25.0,
+                lng: parseFloat(document.getElementById('listingLng').value) || 55.0,
+                description: '',
+                sellerId: currentUser.id,
+                sellerName: currentUser.firstName,
+                createdAt: Date.now(),
+                views: 0
+            });
+            DB.set('listings', listings);
+            addNotification('New listing: ' + document.getElementById('listingTitle').value);
+            goToStep(4);
+        }
+
+        // ==================== 3D CARD INTERACTION ====================
+        function handle3DTilt(e, card) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = (y - centerY) / 10; 
+            const rotateY = (centerX - x) / 10;
+            
+            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        }
+
+        function reset3DTilt(card) {
+            card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+        }
+
+        // ==================== PROFILE ====================
+        function renderProfile() {
+            if(!currentUser) return;
+            document.getElementById('profileAvatar').textContent = currentUser.firstName[0];
+            document.getElementById('profileName').textContent = currentUser.firstName;
+            document.getElementById('profileEmail').textContent = currentUser.email;
+        }
+
+        // ==================== TOAST ====================
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2500);
+        }
+    </script>
+    <!-- build timestamp: 2026-03-01T00:00:00Z -->
 </body>
 </html>
