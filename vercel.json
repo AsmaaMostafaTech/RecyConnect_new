@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "recyconnect",
+  "name": "RecyConnect_new",
   "builds": [
     {
       "src": "index.html",
