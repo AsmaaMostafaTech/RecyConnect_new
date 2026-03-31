@@ -1,0 +1,50 @@
+{
+  "name": "recyconnect",
+  "version": "1.0.0",
+  "description": "Premium marketplace connecting recyclers globally. Turn waste into wealth with our circular economy platform.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server . -p 8000 -c-1",
+    "build": "echo 'Build complete - Static files ready for deployment'",
+    "start": "npx http-server . -p 8000",
+    "lint": "echo 'Linting CSS and JS files...' && echo 'No linting tools configured'",
+    "test": "echo 'No tests configured yet'",
+    "deploy": "echo 'Ready for deployment to static hosting'"
+  },
+  "keywords": [
+    "recycling",
+    "marketplace",
+    "circular-economy",
+    "waste-management",
+    "sustainable-materials",
+    "environment",
+    "green-tech",
+    "sustainability",
+    "eco-friendly"
+  ],
+  "author": {
+    "name": "RecyConnect Team",
+    "email": "info@recyconnect.com",
+    "url": "https://recyconnect.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AsmaaMostafaTech/RecyConnect_new.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AsmaaMostafaTech/RecyConnect_new/issues"
+  },
+  "homepage": "https://recyconnect.com",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
